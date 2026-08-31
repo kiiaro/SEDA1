@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "SEDA - Sistema de Equilíbrio de Diabetes e Artérias",
+    "slug": "seda-saude",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1E3A5F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.gov.sus.seda"
+    },
+    "android": {
+      "package": "br.gov.sus.seda",
+      "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION"]
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

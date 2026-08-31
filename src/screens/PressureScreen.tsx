@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
-import { Heart, Activity, CheckCircle2, AlertTriangle, Clock, FileText } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import Svg, { Path, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
+import { Heart, Activity, CheckCircle2, AlertTriangle, FileText } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -36,7 +44,6 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
   const [notes, setNotes] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
-  // Determine systolic clinical status
   const getStatusInfo = (sys: number, dia: number) => {
     if (sys >= 140 || dia >= 90) {
       return {
@@ -67,13 +74,12 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
 
   const status = getStatusInfo(pressSys, pressDia);
 
-  // Dynamic header color
-  const headerBg =
+  const headerGradient: [string, string, ...string[]] =
     pressSys >= 140
-      ? 'linear-gradient(160deg, #B91C1C 0%, #E45454 100%)'
+      ? ['#B91C1C', '#E45454']
       : pressSys >= 130
-      ? 'linear-gradient(160deg, #D97706 0%, #F4B740 100%)'
-      : 'linear-gradient(160deg, #1E3A5F 0%, #3D6E9F 100%)';
+      ? ['#D97706', '#F4B740']
+      : ['#1E3A5F', '#3D6E9F'];
 
   const handleSave = () => {
     setIsSaved(true);
@@ -90,67 +96,82 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
     }, 2200);
   };
 
-  // 7-day chart data
-  const chartData = [...records]
-    .slice(0, 7)
-    .reverse()
-    .map((r) => ({
-      name: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.'),
-      systolic: r.systolic,
-      diastolic: r.diastolic,
-    }));
+  // SVG Chart calculation for 7 days
+  const recentRecords = [...records].slice(0, 7).reverse();
+  const chartWidth = 300;
+  const chartHeight = 110;
+  const minVal = 50;
+  const maxVal = 170;
+
+  const sysPoints = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.systolic - minVal) / (maxVal - minVal);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.systolic, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
+  });
+
+  const diaPoints = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.diastolic - minVal) / (maxVal - minVal);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.diastolic };
+  });
+
+  const sysPathD = sysPoints.length > 0
+    ? `M ${sysPoints.map((p) => `${p.x},${p.y}`).join(' L ')}`
+    : '';
+
+  const diaPathD = diaPoints.length > 0
+    ? `M ${diaPoints.map((p) => `${p.x},${p.y}`).join(' L ')}`
+    : '';
 
   const StatusIcon = status.icon;
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Pressão Arterial"
         subtitle="Registro e curva diária de aferição"
         onBack={onBack}
-        bgGradient={headerBg}
+        bgGradient={headerGradient}
       />
 
-      <div className="p-4 space-y-4">
-        {/* Dynamic Status Banner */}
-        <div
-          className="rounded-2xl p-4 border flex items-center gap-3.5 transition-all shadow-xs"
-          style={{
-            backgroundColor: `${status.color}15`,
-            borderColor: `${status.color}40`,
-          }}
+      <View style={styles.content}>
+        {/* Status Banner */}
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: `${status.color}15`,
+              borderColor: `${status.color}40`,
+            },
+          ]}
         >
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-              status.level === 'normal' ? 'animate-heartbeat' : ''
-            }`}
-            style={{
-              backgroundColor: status.color,
-              color: '#FFFFFF',
-            }}
-          >
-            <StatusIcon className="w-6 h-6 stroke-[2.5]" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold" style={{ color: status.color }}>
+          <View style={[styles.bannerIconBox, { backgroundColor: status.color }]}>
+            <StatusIcon size={24} color="#FFFFFF" strokeWidth={2.5} />
+          </View>
+          <View style={styles.bannerTextWrapper}>
+            <Text style={[styles.bannerTitle, { color: status.color }]}>
               {status.title}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+            </Text>
+            <Text style={[styles.bannerDesc, { color: dm.sub }]}>
               {status.desc}
-            </p>
-          </div>
-        </div>
+            </Text>
+          </View>
+        </View>
 
-        {/* 3 Steppers in Card */}
-        <div
-          className="rounded-3xl p-5 border shadow-xs space-y-4"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* 3 Steppers Card */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          {/* 1. Systolic Stepper */}
-          <div className="pb-3 border-b" style={{ borderColor: dm.border }}>
+          <View style={[styles.stepperItem, { borderBottomColor: dm.border }]}>
             <Stepper
               label="1. Pressão Sistólica (Máxima)"
               value={pressSys}
@@ -161,10 +182,9 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
               color={status.color}
               fontSizeScale={fontSizeScale}
             />
-          </div>
+          </View>
 
-          {/* 2. Diastolic Stepper */}
-          <div className="pb-3 border-b" style={{ borderColor: dm.border }}>
+          <View style={[styles.stepperItem, { borderBottomColor: dm.border }]}>
             <Stepper
               label="2. Pressão Diastólica (Mínima)"
               value={pressDia}
@@ -175,10 +195,9 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
               color={COLORS.secondary}
               fontSizeScale={fontSizeScale}
             />
-          </div>
+          </View>
 
-          {/* 3. Heart Rate Stepper */}
-          <div>
+          <View style={styles.stepperItemNoBorder}>
             <Stepper
               label="3. Frequência Cardíaca (Pulso)"
               value={heartRate}
@@ -189,119 +208,272 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
               color={COLORS.purple}
               fontSizeScale={fontSizeScale}
             />
-          </div>
-        </div>
+          </View>
+        </View>
 
-        {/* Clean Notes Textarea */}
-        <div
-          className="rounded-2xl p-3.5 border"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* Notes Input */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="flex items-center gap-2 mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <FileText className="w-3.5 h-3.5" />
-            <span>Observações e Sintomas</span>
-          </div>
-          <textarea
-            id="textarea-pressure-notes"
+          <View style={styles.notesHeader}>
+            <FileText size={14} color={dm.sub} />
+            <Text style={[styles.notesLabel, { color: dm.sub }]}>
+              Observações e Sintomas
+            </Text>
+          </View>
+          <TextInput
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ex: Em repouso, após tomar medicamento matinal..."
-            rows={2}
-            className="w-full text-xs font-medium resize-none outline-hidden bg-transparent"
-            style={{ color: dm.text }}
+            onChangeText={setNotes}
+            placeholder="Ex: Em repouso, após medicação matinal..."
+            placeholderTextColor={dm.sub}
+            multiline
+            numberOfLines={2}
+            style={[styles.notesInput, { color: dm.text }]}
           />
-        </div>
+        </View>
 
-        {/* Save Button with State Transition */}
-        <button
-          id="btn-save-pressure"
-          type="button"
-          onClick={handleSave}
+        {/* Save Button */}
+        <TouchableOpacity
+          onPress={handleSave}
           disabled={isSaved}
-          className="btn-press w-full py-4 rounded-2xl font-bold text-white text-base shadow-lg flex items-center justify-center gap-2 transition-all duration-300"
-          style={{
-            background: isSaved
-              ? 'linear-gradient(135deg, #2FBF71 0%, #10B981 100%)'
-              : 'linear-gradient(135deg, #3D6E9F 0%, #5E8FC0 100%)',
-            boxShadow: isSaved
-              ? '0 8px 24px rgba(47, 191, 113, 0.4)'
-              : '0 8px 24px rgba(94, 143, 192, 0.35)',
-          }}
+          activeOpacity={0.8}
+          style={[
+            styles.saveBtn,
+            { backgroundColor: isSaved ? COLORS.success : COLORS.primary },
+          ]}
         >
           {isSaved ? (
             <>
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span>✓ Salvo com sucesso!</span>
+              <CheckCircle2 size={20} color="#FFFFFF" />
+              <Text style={styles.saveBtnText}>✓ Salvo com sucesso!</Text>
             </>
           ) : (
-            <span>Salvar Registro de Pressão</span>
+            <Text style={styles.saveBtnText}>Salvar Registro de Pressão</Text>
           )}
-        </button>
+        </TouchableOpacity>
 
-        {/* 7-Day Dual LineChart (Sistólica + Diastólica) */}
-        <div
-          className="rounded-2xl p-4 border shadow-xs"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* 7-Day Chart */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
+          <View style={styles.chartHeader}>
+            <Text style={[styles.chartTitle, { color: dm.sub }]}>
               Histórico Comparativo (7 Dias)
-            </h3>
-            {/* Custom Dot Legend */}
-            <div className="flex items-center gap-3 text-[11px] font-semibold">
-              <div className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.primary }} />
-                <span style={{ color: dm.sub }}>Sistólica</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.secondary }} />
-                <span style={{ color: dm.sub }}>Diastólica</span>
-              </div>
-            </div>
-          </div>
+            </Text>
+            <View style={styles.chartLegend}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, { backgroundColor: COLORS.primary }]}
+                />
+                <Text style={[styles.legendText, { color: dm.sub }]}>Sistólica</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, { backgroundColor: COLORS.secondary }]}
+                />
+                <Text style={[styles.legendText, { color: dm.sub }]}>Diastólica</Text>
+              </View>
+            </View>
+          </View>
 
-          <div className="h-44 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={dm.isDark ? '#334155' : '#E2E8F0'} />
-                <XAxis dataKey="name" stroke={dm.sub} fontSize={10} tickLine={false} />
-                <YAxis domain={[50, 170]} stroke={dm.sub} fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: dm.card,
-                    borderColor: dm.border,
-                    borderRadius: 12,
-                    fontSize: 11,
-                    color: dm.text,
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="systolic"
+          <View style={styles.chartArea}>
+            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              {/* Grid guide lines */}
+              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
+              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
+              <SvgLine x1="0" y1="100" x2={chartWidth} y2="100" stroke={dm.border} strokeDasharray="3,3" />
+
+              {/* Systolic Line */}
+              {sysPathD ? (
+                <Path
+                  d={sysPathD}
+                  fill="none"
                   stroke={COLORS.primary}
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.primary }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth="3"
+                  strokeLinecap="round"
                 />
-                <Line
-                  type="monotone"
-                  dataKey="diastolic"
+              ) : null}
+
+              {/* Diastolic Line */}
+              {diaPathD ? (
+                <Path
+                  d={diaPathD}
+                  fill="none"
                   stroke={COLORS.secondary}
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.secondary }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth="3"
+                  strokeLinecap="round"
                 />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-    </div>
+              ) : null}
+
+              {sysPoints.map((p, idx) => (
+                <SvgCircle
+                  key={`s-${idx}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  fill="#FFFFFF"
+                  stroke={COLORS.primary}
+                  strokeWidth="2"
+                />
+              ))}
+
+              {diaPoints.map((p, idx) => (
+                <SvgCircle
+                  key={`d-${idx}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  fill="#FFFFFF"
+                  stroke={COLORS.secondary}
+                  strokeWidth="2"
+                />
+              ))}
+            </Svg>
+
+            {/* X-axis labels */}
+            <View style={styles.xAxisRow}>
+              {sysPoints.map((p, idx) => (
+                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>
+                  {p.date}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  content: {
+    padding: 16,
+    gap: 14,
+  },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 12,
+  },
+  bannerIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerTextWrapper: {
+    flex: 1,
+  },
+  bannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  bannerDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  card: {
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  stepperItem: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  stepperItemNoBorder: {
+    paddingTop: 2,
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  notesLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  notesInput: {
+    fontSize: 13,
+    minHeight: 40,
+    fontWeight: '500',
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 18,
+    elevation: 4,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  chartTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  chartArea: {
+    marginTop: 4,
+  },
+  xAxisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  xAxisText: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+});

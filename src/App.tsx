@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import {
   Screen,
   FontSizeScale,
@@ -17,7 +19,6 @@ import {
   INITIAL_ALERTS,
   INITIAL_RECORDS,
 } from './constants/theme';
-import { GlobalCSS } from './components/GlobalCSS';
 import { MobileShell } from './components/MobileShell';
 import { NavBar } from './components/NavBar';
 
@@ -44,7 +45,7 @@ export default function App() {
   // Central application state
   const [screen, setScreen] = useState<Screen>('splash');
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [isSimulatorMode, setIsSimulatorMode] = useState<boolean>(true);
+  const [isSimulatorMode, setIsSimulatorMode] = useState<boolean>(Platform.OS === 'web');
 
   // User Profile & Data
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
@@ -148,20 +149,14 @@ export default function App() {
   ].includes(screen);
 
   return (
-    <div
-      style={{
-        fontSize: `${Math.round(14 * fontScaleRatio)}px`,
-      }}
-      className="font-sans antialiased"
-    >
-      <GlobalCSS />
-
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dm.bg }]}>
+      <StatusBar style={darkMode ? 'light' : 'dark'} />
       <MobileShell
         dm={dm}
         isSimulatorMode={isSimulatorMode}
         onToggleSimulator={() => setIsSimulatorMode(!isSimulatorMode)}
       >
-        <div className="flex-1 flex flex-col min-h-0 relative">
+        <View style={styles.screenContainer}>
           {screen === 'splash' && (
             <SplashScreen onFinish={() => setScreen('onboarding')} />
           )}
@@ -330,7 +325,7 @@ export default function App() {
               dm={dm}
             />
           )}
-        </div>
+        </View>
 
         {/* Persistent Accessible NavBar for Main Screens */}
         {showNavBar && (
@@ -342,6 +337,16 @@ export default function App() {
           />
         )}
       </MobileShell>
-    </div>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  screenContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+});

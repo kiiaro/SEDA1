@@ -1,26 +1,20 @@
 import React, { useState } from 'react';
 import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
+import {
   TrendingDown,
   TrendingUp,
-  HeartPulse,
-  Droplets,
-  Activity,
   CheckCircle2,
   AlertTriangle,
-  Calendar,
   Share2,
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
+} from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -34,16 +28,38 @@ interface DashboardScreenProps {
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBack, dm }) => {
   const [activeTab, setActiveTab] = useState<'pressure' | 'glucose' | 'frequency'>('pressure');
 
-  const chartData = [...records]
-    .slice(0, 7)
-    .reverse()
-    .map((r) => ({
-      name: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.'),
-      systolic: r.systolic,
-      diastolic: r.diastolic,
-      glucose: r.glucose,
-      heartRate: r.heartRate,
-    }));
+  const recentRecords = [...records].slice(0, 7).reverse();
+  const chartWidth = 300;
+  const chartHeight = 110;
+
+  // Pressure SVG points
+  const sysPoints = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.systolic - 50) / (160 - 50);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.systolic, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
+  });
+
+  const diaPoints = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.diastolic - 50) / (160 - 50);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.diastolic };
+  });
+
+  const sysPathD = sysPoints.length > 0 ? `M ${sysPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
+  const diaPathD = diaPoints.length > 0 ? `M ${diaPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
+
+  // Glucose SVG points
+  const glucPoints = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.glucose - 60) / (180 - 60);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.glucose, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
+  });
+
+  const glucPathD = glucPoints.length > 0 ? `M ${glucPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
+  const glucAreaD = glucPoints.length > 0 ? `${glucPathD} L ${glucPoints[glucPoints.length - 1].x},${chartHeight} L ${glucPoints[0].x},${chartHeight} Z` : '';
 
   const weeklySummary = [
     { day: 'Segunda-feira', status: 'ok', text: 'Todas medições na meta' },
@@ -55,320 +71,504 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
     { day: 'Domingo (Hoje)', status: 'ok', text: 'Aferição matinal concluída' },
   ];
 
+  const handleShare = () => {
+    Alert.alert(
+      'Exportar Relatório',
+      'Relatório clínico exportado para PDF (Padrão SUS/UBS) pronto para compartilhar!'
+    );
+  };
+
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Painel Analítico"
         subtitle="Métricas, gráficos e relatório clínico"
         onBack={onBack}
-        bgGradient="linear-gradient(160deg, #1E3A5F 0%, #3D6E9F 100%)"
+        bgGradient={['#1E3A5F', '#3D6E9F']}
         rightElement={
-          <button
-            id="btn-export-pdf-report"
-            type="button"
-            onClick={() => alert('Relatório clínico exportado para PDF (Padrão SUS/UBS) pronto para compartilhar!')}
-            className="btn-press p-2 rounded-full bg-white/20 hover:bg-white/30 text-white"
-            aria-label="Compartilhar relatório"
+          <TouchableOpacity
+            onPress={handleShare}
+            activeOpacity={0.7}
+            style={styles.shareBtn}
+            accessibilityLabel="Compartilhar relatório"
           >
-            <Share2 className="w-4 h-4" />
-          </button>
+            <Share2 size={16} color="#FFFFFF" />
+          </TouchableOpacity>
         }
       />
 
-      <div className="p-4 space-y-4">
-        {/* 3 Dashboard Tabs: Pressão / Glicemia / Frequência */}
-        <div
-          className="p-1 rounded-2xl border flex items-center gap-1 shadow-xs"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+      <View style={styles.body}>
+        {/* Tab Toggle */}
+        <View
+          style={[
+            styles.tabsWrapper,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <button
-            id="btn-dash-tab-pressure"
-            type="button"
-            onClick={() => setActiveTab('pressure')}
-            className="btn-press flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
-            style={{
-              backgroundColor: activeTab === 'pressure' ? COLORS.primary : 'transparent',
-              color: activeTab === 'pressure' ? '#FFFFFF' : dm.sub,
-              boxShadow: activeTab === 'pressure' ? '0 2px 8px rgba(94,143,192,0.35)' : 'none',
-            }}
+          <TouchableOpacity
+            onPress={() => setActiveTab('pressure')}
+            activeOpacity={0.7}
+            style={[
+              styles.tabBtn,
+              activeTab === 'pressure' && { backgroundColor: COLORS.primary },
+            ]}
           >
-            Pressão
-          </button>
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'pressure' ? '#FFFFFF' : dm.sub },
+              ]}
+            >
+              Pressão
+            </Text>
+          </TouchableOpacity>
 
-          <button
-            id="btn-dash-tab-glucose"
-            type="button"
-            onClick={() => setActiveTab('glucose')}
-            className="btn-press flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
-            style={{
-              backgroundColor: activeTab === 'glucose' ? COLORS.primary : 'transparent',
-              color: activeTab === 'glucose' ? '#FFFFFF' : dm.sub,
-              boxShadow: activeTab === 'glucose' ? '0 2px 8px rgba(94,143,192,0.35)' : 'none',
-            }}
+          <TouchableOpacity
+            onPress={() => setActiveTab('glucose')}
+            activeOpacity={0.7}
+            style={[
+              styles.tabBtn,
+              activeTab === 'glucose' && { backgroundColor: COLORS.primary },
+            ]}
           >
-            Glicemia
-          </button>
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'glucose' ? '#FFFFFF' : dm.sub },
+              ]}
+            >
+              Glicemia
+            </Text>
+          </TouchableOpacity>
 
-          <button
-            id="btn-dash-tab-frequency"
-            type="button"
-            onClick={() => setActiveTab('frequency')}
-            className="btn-press flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
-            style={{
-              backgroundColor: activeTab === 'frequency' ? COLORS.primary : 'transparent',
-              color: activeTab === 'frequency' ? '#FFFFFF' : dm.sub,
-              boxShadow: activeTab === 'frequency' ? '0 2px 8px rgba(94,143,192,0.35)' : 'none',
-            }}
+          <TouchableOpacity
+            onPress={() => setActiveTab('frequency')}
+            activeOpacity={0.7}
+            style={[
+              styles.tabBtn,
+              activeTab === 'frequency' && { backgroundColor: COLORS.primary },
+            ]}
           >
-            Frequência
-          </button>
-        </div>
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'frequency' ? '#FFFFFF' : dm.sub },
+              ]}
+            >
+              Frequência
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* KPI Row (3 Cards with Trending Icons) */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* 3 KPI Cards */}
+        <View style={styles.kpiRow}>
           {/* KPI 1 */}
-          <div
-            className="p-3 rounded-2xl border text-center"
-            style={{
-              backgroundColor: 'rgba(94,143,192,0.12)',
-              borderColor: 'rgba(94,143,192,0.25)',
-            }}
-          >
-            <span className="text-[10px] font-bold text-sky-800 dark:text-sky-300 block">
-              Média Sist.
-            </span>
-            <span className="text-base font-black text-sky-950 dark:text-sky-100 block">
-              126 <span className="text-[9px] font-medium text-slate-500">mmHg</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 mt-1">
-              <TrendingDown className="w-3 h-3" /> -3%
-            </span>
-          </div>
+          <View style={[styles.kpiCard, styles.kpiCard1]}>
+            <Text style={styles.kpiLabel1}>Média Sist.</Text>
+            <Text style={styles.kpiVal1}>126</Text>
+            <Text style={styles.kpiUnit}>mmHg</Text>
+            <View style={styles.kpiTrend}>
+              <TrendingDown size={12} color="#16A34A" />
+              <Text style={styles.kpiTrendText}>-3%</Text>
+            </View>
+          </View>
 
           {/* KPI 2 */}
-          <div
-            className="p-3 rounded-2xl border text-center"
-            style={{
-              backgroundColor: 'rgba(244,183,64,0.12)',
-              borderColor: 'rgba(244,183,64,0.25)',
-            }}
-          >
-            <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 block">
-              Glicose Média
-            </span>
-            <span className="text-base font-black text-amber-950 dark:text-amber-100 block">
-              112 <span className="text-[9px] font-medium text-slate-500">mg/dL</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 mt-1">
-              <TrendingDown className="w-3 h-3" /> -5%
-            </span>
-          </div>
+          <View style={[styles.kpiCard, styles.kpiCard2]}>
+            <Text style={styles.kpiLabel2}>Glicose Média</Text>
+            <Text style={styles.kpiVal2}>112</Text>
+            <Text style={styles.kpiUnit}>mg/dL</Text>
+            <View style={styles.kpiTrend}>
+              <TrendingDown size={12} color="#16A34A" />
+              <Text style={styles.kpiTrendText}>-5%</Text>
+            </View>
+          </View>
 
           {/* KPI 3 */}
-          <div
-            className="p-3 rounded-2xl border text-center"
-            style={{
-              backgroundColor: 'rgba(107,127,212,0.12)',
-              borderColor: 'rgba(107,127,212,0.25)',
-            }}
-          >
-            <span className="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 block">
-              Pulso Médio
-            </span>
-            <span className="text-base font-black text-indigo-950 dark:text-indigo-100 block">
-              73 <span className="text-[9px] font-medium text-slate-500">bpm</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 mt-1">
-              <TrendingUp className="w-3 h-3" /> Normal
-            </span>
-          </div>
-        </div>
+          <View style={[styles.kpiCard, styles.kpiCard3]}>
+            <Text style={styles.kpiLabel3}>Pulso Médio</Text>
+            <Text style={styles.kpiVal3}>73</Text>
+            <Text style={styles.kpiUnit}>bpm</Text>
+            <View style={styles.kpiTrend}>
+              <TrendingUp size={12} color="#4F46E5" />
+              <Text style={[styles.kpiTrendText, { color: '#4F46E5' }]}>Normal</Text>
+            </View>
+          </View>
+        </View>
 
-        {/* Tab 1: Pressão (LineChart dual com legenda) */}
+        {/* Tab 1: Pressão */}
         {activeTab === 'pressure' && (
-          <div
-            className="rounded-2xl p-4 border shadow-xs"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
-                Pressão Sistólica vs Diastólica
-              </h3>
-              <div className="flex items-center gap-2 text-[11px] font-bold">
-                <span className="text-sky-600">● Sistólica</span>
-                <span className="text-teal-600">● Diastólica</span>
-              </div>
-            </div>
+            <View style={styles.chartHeader}>
+              <Text style={[styles.chartTitle, { color: dm.sub }]}>
+                Sistólica vs Diastólica
+              </Text>
+              <View style={styles.chartLegend}>
+                <Text style={styles.legendSys}>● Sistólica</Text>
+                <Text style={styles.legendDia}>● Diastólica</Text>
+              </View>
+            </View>
 
-            <div className="h-44 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={dm.isDark ? '#334155' : '#E2E8F0'} />
-                  <XAxis dataKey="name" stroke={dm.sub} fontSize={10} tickLine={false} />
-                  <YAxis domain={[50, 160]} stroke={dm.sub} fontSize={10} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: dm.card,
-                      borderColor: dm.border,
-                      borderRadius: 12,
-                      fontSize: 11,
-                      color: dm.text,
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="systolic"
-                    stroke={COLORS.primary}
-                    strokeWidth={3}
-                    dot={{ r: 3.5 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="diastolic"
-                    stroke={COLORS.secondary}
-                    strokeWidth={3}
-                    dot={{ r: 3.5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
+              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
+
+              {sysPathD ? <Path d={sysPathD} fill="none" stroke={COLORS.primary} strokeWidth="3" /> : null}
+              {diaPathD ? <Path d={diaPathD} fill="none" stroke={COLORS.secondary} strokeWidth="3" /> : null}
+
+              {sysPoints.map((p, idx) => (
+                <SvgCircle key={`s-${idx}`} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.primary} strokeWidth="2" />
+              ))}
+              {diaPoints.map((p, idx) => (
+                <SvgCircle key={`d-${idx}`} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.secondary} strokeWidth="2" />
+              ))}
+            </Svg>
+
+            <View style={styles.xAxisRow}>
+              {sysPoints.map((p, idx) => (
+                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>{p.date}</Text>
+              ))}
+            </View>
+          </View>
         )}
 
-        {/* Tab 2: Glicemia (AreaChart com gradiente amarelo) */}
+        {/* Tab 2: Glicemia */}
         {activeTab === 'glucose' && (
-          <div
-            className="rounded-2xl p-4 border shadow-xs"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
-                Oscilação Glicêmica Semanal
-              </h3>
-              <span className="text-xs font-bold text-amber-600">Meta: 70 - 126 mg/dL</span>
-            </div>
+            <View style={styles.chartHeader}>
+              <Text style={[styles.chartTitle, { color: dm.sub }]}>
+                Oscilação Glicêmica
+              </Text>
+              <Text style={styles.targetLabel}>Meta: 70 - 126 mg/dL</Text>
+            </View>
 
-            <div className="h-44 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="dashGlucGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={COLORS.warn} stopOpacity={0.4} />
-                      <stop offset="95%" stopColor={COLORS.warn} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={dm.isDark ? '#334155' : '#E2E8F0'} />
-                  <XAxis dataKey="name" stroke={dm.sub} fontSize={10} tickLine={false} />
-                  <YAxis domain={[60, 180]} stroke={dm.sub} fontSize={10} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: dm.card,
-                      borderColor: dm.border,
-                      borderRadius: 12,
-                      fontSize: 11,
-                      color: dm.text,
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="glucose"
-                    stroke={COLORS.warn}
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#dashGlucGrad)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              <Defs>
+                <SvgLinearGradient id="dashGlucGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="5%" stopColor={COLORS.warn} stopOpacity={0.4} />
+                  <Stop offset="95%" stopColor={COLORS.warn} stopOpacity={0.0} />
+                </SvgLinearGradient>
+              </Defs>
+              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
+              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
+
+              {glucAreaD ? <Path d={glucAreaD} fill="url(#dashGlucGrad)" /> : null}
+              {glucPathD ? <Path d={glucPathD} fill="none" stroke={COLORS.warn} strokeWidth="3" /> : null}
+
+              {glucPoints.map((p, idx) => (
+                <SvgCircle key={idx} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.warn} strokeWidth="2" />
+              ))}
+            </Svg>
+
+            <View style={styles.xAxisRow}>
+              {glucPoints.map((p, idx) => (
+                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>{p.date}</Text>
+              ))}
+            </View>
+          </View>
         )}
 
-        {/* Tab 3: Frequência (Barras CSS manuais com altura crescente: (28 + i*6)px) */}
+        {/* Tab 3: Frequência */}
         {activeTab === 'frequency' && (
-          <div
-            className="rounded-2xl p-4 border shadow-xs"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
-                Frequência de Aferições Diárias
-              </h3>
-              <span className="text-xs font-bold text-indigo-600">Meta: 2 aferições/dia</span>
-            </div>
+            <View style={styles.chartHeader}>
+              <Text style={[styles.chartTitle, { color: dm.sub }]}>
+                Aferições Diárias
+              </Text>
+              <Text style={[styles.targetLabel, { color: '#4F46E5' }]}>Meta: 2 aferições/dia</Text>
+            </View>
 
-            <div className="flex items-end justify-between gap-2 h-36 px-2 pt-4">
+            <View style={styles.barChartContainer}>
               {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Hoje'].map((day, i) => {
-                const heightVal = 32 + i * 8;
+                const heightVal = 24 + i * 9;
                 const isToday = i === 6;
-
                 return (
-                  <div key={day} className="flex-1 flex flex-col items-center justify-end gap-2 h-full">
-                    <div
-                      className="w-full max-w-[28px] rounded-t-xl transition-all"
-                      style={{
-                        height: `${heightVal}px`,
-                        backgroundColor: isToday ? COLORS.primary : `${COLORS.primary}45`,
-                      }}
+                  <View key={day} style={styles.barColumn}>
+                    <View
+                      style={[
+                        styles.barItem,
+                        {
+                          height: heightVal,
+                          backgroundColor: isToday ? COLORS.primary : `${COLORS.primary}45`,
+                        },
+                      ]}
                     />
-                    <span
-                      className="text-[10px] font-bold"
-                      style={{
-                        color: isToday ? COLORS.primary : dm.sub,
-                      }}
+                    <Text
+                      style={[
+                        styles.barLabel,
+                        { color: isToday ? COLORS.primary : dm.sub },
+                      ]}
                     >
                       {day}
-                    </span>
-                  </div>
+                    </Text>
+                  </View>
                 );
               })}
-            </div>
-          </div>
+            </View>
+          </View>
         )}
 
-        {/* Resumo Semanal */}
-        <div
-          className="rounded-2xl p-4 border shadow-xs space-y-2.5"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* Weekly Summary */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: dm.sub }}>
+          <Text style={[styles.chartTitle, { color: dm.sub, marginBottom: 8 }]}>
             Resumo de Estabilidade Semanal
-          </h3>
+          </Text>
+
           {weeklySummary.map((item, idx) => (
-            <div
+            <View
               key={idx}
-              className="flex items-center justify-between py-1.5 border-b last:border-0 text-xs font-medium"
-              style={{ borderColor: dm.border }}
+              style={[
+                styles.summaryRow,
+                idx < weeklySummary.length - 1 && {
+                  borderBottomWidth: 1,
+                  borderBottomColor: dm.border,
+                },
+              ]}
             >
-              <div className="flex items-center gap-2">
+              <View style={styles.summaryLeft}>
                 {item.status === 'ok' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 size={16} color="#16A34A" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                  <AlertTriangle size={16} color="#D97706" />
                 )}
-                <span className="font-bold" style={{ color: dm.text }}>
+                <Text style={[styles.summaryDay, { color: dm.text }]}>
                   {item.day}
-                </span>
-              </div>
-              <span className="text-slate-500 text-[11px] truncate max-w-[170px]">{item.text}</span>
-            </div>
+                </Text>
+              </View>
+              <Text style={styles.summaryText} numberOfLines={1}>
+                {item.text}
+              </Text>
+            </View>
           ))}
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    padding: 16,
+    gap: 14,
+  },
+  tabsWrapper: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  kpiRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  kpiCard: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  kpiCard1: {
+    backgroundColor: 'rgba(94, 143, 192, 0.12)',
+    borderColor: 'rgba(94, 143, 192, 0.25)',
+  },
+  kpiCard2: {
+    backgroundColor: 'rgba(244, 183, 64, 0.12)',
+    borderColor: 'rgba(244, 183, 64, 0.25)',
+  },
+  kpiCard3: {
+    backgroundColor: 'rgba(107, 127, 212, 0.12)',
+    borderColor: 'rgba(107, 127, 212, 0.25)',
+  },
+  kpiLabel1: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  kpiLabel2: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  kpiLabel3: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4338CA',
+  },
+  kpiVal1: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0C4A6E',
+    marginTop: 2,
+  },
+  kpiVal2: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#78350F',
+    marginTop: 2,
+  },
+  kpiVal3: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#312E81',
+    marginTop: 2,
+  },
+  kpiUnit: {
+    fontSize: 9,
+    color: '#94A3B8',
+  },
+  kpiTrend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 4,
+  },
+  kpiTrendText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  card: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  chartTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendSys: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  legendDia: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  targetLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  xAxisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  xAxisText: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  barChartContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 110,
+    paddingTop: 16,
+    paddingHorizontal: 4,
+  },
+  barColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: '100%',
+    gap: 6,
+  },
+  barItem: {
+    width: 22,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+  },
+  barLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  summaryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  summaryDay: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  summaryText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    maxWidth: 150,
+  },
+});

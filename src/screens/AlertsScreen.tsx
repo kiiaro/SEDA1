@@ -1,6 +1,12 @@
 import React from 'react';
-import { Bell, ArrowRight, CheckCircle2, ShieldAlert, Check } from 'lucide-react';
-import { COLORS } from '../constants/theme';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { ArrowRight, Check } from 'lucide-react-native';
 import { AlertItem, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
 
@@ -20,112 +26,239 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   dm,
 }) => {
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
-      {/* Header Red Gradient */}
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Central de Alertas"
         subtitle="Notificações críticas, remédios e consultas"
         onBack={onBack}
-        bgGradient="linear-gradient(160deg, #991B1B 0%, #DC2626 50%, #E45454 100%)"
+        bgGradient={['#991B1B', '#DC2626', '#E45454']}
       />
 
-      <div className="p-4 space-y-3">
+      <View style={styles.content}>
         {alerts.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 border text-center flex flex-col items-center justify-center"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+          <View
+            style={[
+              styles.emptyCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-600 mb-3">
-              <Check className="w-8 h-8" />
-            </div>
-            <h3 className="text-base font-bold" style={{ color: dm.text }}>
+            <View style={styles.emptyIconBox}>
+              <Check size={32} color="#16A34A" />
+            </View>
+            <Text style={[styles.emptyTitle, { color: dm.text }]}>
               Nenhum alerta pendente
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            </Text>
+            <Text style={[styles.emptyDesc, { color: dm.sub }]}>
               Todas as suas medicações e medições estão 100% em dia.
-            </p>
-          </div>
+            </Text>
+          </View>
         ) : (
-          alerts.map((alt, index) => (
-            <div
+          alerts.map((alt) => (
+            <View
               key={alt.id}
-              className="rounded-2xl p-4 border shadow-xs transition-all animate-float-up"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-                borderLeft: `5px solid ${alt.color}`,
-                animationDelay: `${index * 0.06}s`,
-              }}
+              style={[
+                styles.alertCard,
+                {
+                  backgroundColor: dm.card,
+                  borderColor: dm.border,
+                  borderLeftColor: alt.color,
+                },
+              ]}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  {/* Emoji in 14px rounded div with cor+'18' */}
-                  <div
-                    className="w-11 h-11 rounded-[14px] flex items-center justify-center text-xl shrink-0"
-                    style={{ backgroundColor: `${alt.color}18` }}
+              <View style={styles.alertTop}>
+                <View style={styles.alertMainInfo}>
+                  <View
+                    style={[
+                      styles.emojiBox,
+                      { backgroundColor: `${alt.color}18` },
+                    ]}
                   >
-                    {alt.emoji}
-                  </div>
+                    <Text style={styles.emojiText}>{alt.emoji}</Text>
+                  </View>
 
-                  <div>
-                    <h3 className="text-sm font-bold tracking-tight" style={{ color: dm.text }}>
+                  <View style={styles.alertTextWrapper}>
+                    <Text style={[styles.alertTitle, { color: dm.text }]}>
                       {alt.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                    </Text>
+                    <Text style={[styles.alertDesc, { color: dm.sub }]}>
                       {alt.desc}
-                    </p>
-                  </div>
-                </div>
+                    </Text>
+                  </View>
+                </View>
 
-                {/* Timestamp in rounded badge in corner */}
-                <div
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"
-                  style={{
-                    backgroundColor: 'rgba(100, 116, 139, 0.12)',
-                    color: dm.sub,
-                  }}
-                >
-                  {alt.time}
-                </div>
-              </div>
+                <View style={styles.timeBadge}>
+                  <Text style={[styles.timeText, { color: dm.sub }]}>
+                    {alt.time}
+                  </Text>
+                </View>
+              </View>
 
-              {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t" style={{ borderColor: dm.border }}>
-                <button
-                  id={`btn-dismiss-${alt.id}`}
-                  type="button"
-                  onClick={() => onDismissAlert(alt.id)}
-                  className="btn-press text-xs font-semibold text-slate-400 hover:text-slate-600 px-3 py-1.5 rounded-lg"
+              {/* Action Buttons */}
+              <View
+                style={[
+                  styles.alertActions,
+                  { borderTopColor: dm.border },
+                ]}
+              >
+                <TouchableOpacity
+                  onPress={() => onDismissAlert(alt.id)}
+                  activeOpacity={0.7}
+                  style={styles.dismissBtn}
                 >
-                  Dispensar
-                </button>
+                  <Text style={[styles.dismissBtnText, { color: dm.sub }]}>
+                    Dispensar
+                  </Text>
+                </TouchableOpacity>
 
                 {alt.actionLabel && (
-                  <button
-                    id={`btn-action-${alt.id}`}
-                    type="button"
-                    onClick={() => {
+                  <TouchableOpacity
+                    onPress={() => {
                       if (alt.actionScreen) {
                         onNavigate(alt.actionScreen);
                       } else {
                         onDismissAlert(alt.id);
                       }
                     }}
-                    className="btn-press px-3.5 py-1.5 rounded-xl text-xs font-bold text-white shadow-xs flex items-center gap-1"
-                    style={{ backgroundColor: alt.color }}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.actionBtn,
+                      { backgroundColor: alt.color },
+                    ]}
                   >
-                    <span>{alt.actionLabel}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                    <Text style={styles.actionBtnText}>{alt.actionLabel}</Text>
+                    <ArrowRight size={14} color="#FFFFFF" />
+                  </TouchableOpacity>
                 )}
-              </div>
-            </div>
+              </View>
+            </View>
           ))
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  content: {
+    padding: 16,
+    gap: 12,
+  },
+  emptyCard: {
+    borderRadius: 22,
+    padding: 32,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptyDesc: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    maxWidth: 240,
+    lineHeight: 18,
+  },
+  alertCard: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderLeftWidth: 5,
+    elevation: 1,
+  },
+  alertTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  alertMainInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    flex: 1,
+  },
+  emojiBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiText: {
+    fontSize: 20,
+  },
+  alertTextWrapper: {
+    flex: 1,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  alertDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  timeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(100, 116, 139, 0.12)',
+  },
+  timeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  alertActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  dismissBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  dismissBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+});

@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Modal,
+  Alert,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
   Calendar,
   Clock,
   MapPin,
@@ -10,10 +20,9 @@ import {
   XCircle,
   Plus,
   Trash2,
-  ChevronRight,
   User,
   Building2,
-} from 'lucide-react';
+} from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { Appointment, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -38,7 +47,6 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Filtering upcoming vs past
   const upcomingList = appointments.filter(
     (a) => a.status !== 'cancelled' && a.status !== 'completed' && a.date >= todayStr
   );
@@ -48,8 +56,6 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
   );
 
   const currentList = activeTab === 'upcoming' ? upcomingList : pastList;
-
-  // Next appointment for top glassmorphism card
   const nextAppt = upcomingList.sort((a, b) => a.date.localeCompare(b.date))[0];
 
   const handleConfirmCancel = () => {
@@ -59,317 +65,599 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
     }
   };
 
-  const getStatusBadge = (status: Appointment['status']) => {
+  const renderStatusBadge = (status: Appointment['status']) => {
     switch (status) {
       case 'confirmed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Confirmado
-          </span>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+            <CheckCircle2 size={12} color="#16A34A" />
+            <Text style={[styles.statusText, { color: '#16A34A' }]}>Confirmado</Text>
+          </View>
         );
       case 'pending':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600">
-            <Hourglass className="w-3.5 h-3.5" /> Pendente UBS
-          </span>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+            <Hourglass size={12} color="#D97706" />
+            <Text style={[styles.statusText, { color: '#D97706' }]}>Pendente UBS</Text>
+          </View>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/15 text-sky-600">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Realizada
-          </span>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
+            <CheckCircle2 size={12} color="#0284C7" />
+            <Text style={[styles.statusText, { color: '#0284C7' }]}>Realizada</Text>
+          </View>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/15 text-red-600">
-            <XCircle className="w-3.5 h-3.5" /> Cancelada
-          </span>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+            <XCircle size={12} color="#DC2626" />
+            <Text style={[styles.statusText, { color: '#DC2626' }]}>Cancelada</Text>
+          </View>
         );
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-16 transition-colors duration-300 relative" style={{ backgroundColor: dm.bg }}>
-      <BackHeader
-        title="Consultas Médicas SUS"
-        subtitle="Agendamentos presenciais e teleconsultas"
-        onBack={onBack}
-        bgGradient="linear-gradient(160deg, #1E3A5F 0%, #3D6E9F 100%)"
-        rightElement={
-          <button
-            id="btn-header-new-appt"
-            type="button"
-            onClick={() => onNavigate('new_appointment')}
-            className="btn-press p-2 rounded-full bg-white/20 hover:bg-white/30 text-white"
-            aria-label="Nova consulta"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        }
-      />
-
-      <div className="p-4 space-y-4">
-        {/* Top Glassmorphism Highlight Card for Next Appointment */}
-        {nextAppt && (
-          <div
-            className="rounded-2xl p-4 text-white shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #3D6E9F 0%, #5E8FC0 100%)',
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                Próximo Atendimento
-              </span>
-              <span className="text-xs font-bold text-white">
-                {nextAppt.date} • {nextAppt.time}
-              </span>
-            </div>
-
-            <h3 className="text-base font-black truncate">{nextAppt.doctor}</h3>
-            <p className="text-xs text-blue-100 font-medium">{nextAppt.specialty}</p>
-            <p className="text-[11px] text-white/90 mt-1 truncate">
-              📍 {nextAppt.location || 'Teleconsulta Conecte SUS'}
-            </p>
-          </div>
-        )}
-
-        {/* 2 Tabs: Próximas / Passadas */}
-        <div
-          className="p-1 rounded-2xl border flex items-center gap-1 shadow-xs"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
-        >
-          <button
-            id="btn-appt-tab-upcoming"
-            type="button"
-            onClick={() => setActiveTab('upcoming')}
-            className="btn-press flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
-            style={{
-              backgroundColor: activeTab === 'upcoming' ? COLORS.primary : 'transparent',
-              color: activeTab === 'upcoming' ? '#FFFFFF' : dm.sub,
-              boxShadow: activeTab === 'upcoming' ? '0 2px 8px rgba(94,143,192,0.35)' : 'none',
-            }}
-          >
-            Próximas ({upcomingList.length})
-          </button>
-
-          <button
-            id="btn-appt-tab-past"
-            type="button"
-            onClick={() => setActiveTab('past')}
-            className="btn-press flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
-            style={{
-              backgroundColor: activeTab === 'past' ? COLORS.primary : 'transparent',
-              color: activeTab === 'past' ? '#FFFFFF' : dm.sub,
-              boxShadow: activeTab === 'past' ? '0 2px 8px rgba(94,143,192,0.35)' : 'none',
-            }}
-          >
-            Histórico ({pastList.length})
-          </button>
-        </div>
-
-        {/* Appointments List */}
-        <div className="space-y-3">
-          {currentList.length === 0 ? (
-            <div
-              className="rounded-2xl p-8 border text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
-            >
-              <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-500">
-                Nenhuma consulta encontrada nesta categoria.
-              </p>
-            </div>
-          ) : (
-            currentList.map((appt) => (
-              <div
-                key={appt.id}
-                className="rounded-2xl p-4 border shadow-xs transition-all space-y-3 animate-float-up"
-                style={{
-                  backgroundColor: dm.card,
-                  borderColor: dm.border,
-                }}
-              >
-                {/* Top: Doctor, Specialty and Status Badge */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{
-                        backgroundColor:
-                          appt.type === 'teleconsulta' ? `${COLORS.purple}18` : `${COLORS.primary}18`,
-                        color: appt.type === 'teleconsulta' ? COLORS.purple : COLORS.primary,
-                      }}
-                    >
-                      {appt.type === 'teleconsulta' ? (
-                        <Video className="w-5 h-5" />
-                      ) : (
-                        <Stethoscope className="w-5 h-5" />
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-bold" style={{ color: dm.text }}>
-                        {appt.doctor}
-                      </h4>
-                      <p className="text-xs text-slate-500">{appt.specialty}</p>
-                    </div>
-                  </div>
-
-                  <div>{getStatusBadge(appt.status)}</div>
-                </div>
-
-                {/* Details Section with dm.bg background */}
-                <div
-                  className="rounded-xl p-3 space-y-1.5 text-xs font-medium"
-                  style={{
-                    backgroundColor: dm.bg,
-                    color: dm.text,
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Data: {appt.date}</span>
-                    <Clock className="w-3.5 h-3.5 text-slate-400 ml-2" />
-                    <span>Horário: {appt.time}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate">{appt.location || 'Teleconsulta Conecte SUS'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-slate-400 text-[11px]">
-                    <User className="w-3.5 h-3.5" />
-                    <span>Agendado por: {appt.bookedBy}</span>
-                  </div>
-                </div>
-
-                {/* Yellow Notes Box (#FEF3C7) */}
-                {appt.notes && (
-                  <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 font-medium">
-                    📌 <strong>Orientação:</strong> {appt.notes}
-                  </div>
-                )}
-
-                {/* Conditional Action Buttons */}
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  {appt.type === 'teleconsulta' ? (
-                    <button
-                      id={`btn-tele-join-${appt.id}`}
-                      type="button"
-                      onClick={() => alert(`Entrando na Sala de Teleconsulta SUS com ${appt.doctor}...`)}
-                      className="btn-press flex-1 py-2.5 px-3 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-2"
-                      style={{
-                        background: 'linear-gradient(135deg, #3D6E9F 0%, #5E8FC0 100%)',
-                      }}
-                    >
-                      <Video className="w-4 h-4" />
-                      <span>Entrar na Sala Virtual</span>
-                    </button>
-                  ) : (
-                    <button
-                      id={`btn-map-${appt.id}`}
-                      type="button"
-                      onClick={() => alert(`Abrindo rota no mapa para: ${appt.location}`)}
-                      className="btn-press flex-1 py-2.5 px-3 rounded-xl font-bold text-xs border flex items-center justify-center gap-2"
-                      style={{
-                        backgroundColor: dm.bg,
-                        borderColor: dm.border,
-                        color: dm.text,
-                      }}
-                    >
-                      <MapPin className="w-4 h-4 text-red-500" />
-                      <span>Como Chegar</span>
-                    </button>
-                  )}
-
-                  {appt.status !== 'cancelled' && (
-                    <button
-                      id={`btn-cancel-appt-trigger-${appt.id}`}
-                      type="button"
-                      onClick={() => setCancelModalAppt(appt)}
-                      className="btn-press w-10 h-10 rounded-xl border border-red-200 dark:border-red-900/50 flex items-center justify-center text-red-500 bg-red-50 dark:bg-red-950/30 hover:bg-red-100"
-                      aria-label="Cancelar consulta"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Floating Action Button (+) Fixed above Navbar */}
-      <button
-        id="btn-fab-new-appointment"
-        type="button"
-        onClick={() => onNavigate('new_appointment')}
-        className="btn-press absolute bottom-4 right-4 w-14 h-14 rounded-full text-white flex items-center justify-center shadow-2xl z-20"
-        style={{
-          backgroundColor: COLORS.primary,
-          boxShadow: '0 8px 24px rgba(94, 143, 192, 0.5)',
-        }}
-        aria-label="Agendar Nova Consulta"
+    <View style={[styles.container, { backgroundColor: dm.bg }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Plus className="w-7 h-7 stroke-[2.5]" />
-      </button>
+        <BackHeader
+          title="Consultas Médicas SUS"
+          subtitle="Agendamentos presenciais e teleconsultas"
+          onBack={onBack}
+          bgGradient={['#1E3A5F', '#3D6E9F']}
+          rightElement={
+            <TouchableOpacity
+              onPress={() => onNavigate('new_appointment')}
+              activeOpacity={0.7}
+              style={styles.headerBtn}
+              accessibilityLabel="Nova consulta"
+            >
+              <Plus size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          }
+        />
 
-      {/* Cancellation Bottom Sheet Modal */}
-      {cancelModalAppt && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs animate-fade-in">
-          <div
-            className="w-full max-w-[440px] rounded-t-[24px] p-6 shadow-2xl border-t animate-float-up"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+        <View style={styles.body}>
+          {/* Highlight Next Appointment */}
+          {nextAppt && (
+            <LinearGradient
+              colors={['#3D6E9F', '#5E8FC0']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.highlightCard}
+            >
+              <View style={styles.highlightHeader}>
+                <View style={styles.highlightTag}>
+                  <Text style={styles.highlightTagText}>Próximo Atendimento</Text>
+                </View>
+                <Text style={styles.highlightDateTime}>
+                  {nextAppt.date} • {nextAppt.time}
+                </Text>
+              </View>
+
+              <Text style={styles.highlightDoctor}>{nextAppt.doctor}</Text>
+              <Text style={styles.highlightSpecialty}>{nextAppt.specialty}</Text>
+              <Text style={styles.highlightLocation} numberOfLines={1}>
+                📍 {nextAppt.location || 'Teleconsulta Conecte SUS'}
+              </Text>
+            </LinearGradient>
+          )}
+
+          {/* 2 Tabs */}
+          <View
+            style={[
+              styles.tabsWrapper,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            {/* Drag Handle (40x4px) */}
-            <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700 mx-auto mb-4" />
+            <TouchableOpacity
+              onPress={() => setActiveTab('upcoming')}
+              activeOpacity={0.7}
+              style={[
+                styles.tabBtn,
+                activeTab === 'upcoming' && { backgroundColor: COLORS.primary },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'upcoming' ? '#FFFFFF' : dm.sub },
+                ]}
+              >
+                Próximas ({upcomingList.length})
+              </Text>
+            </TouchableOpacity>
 
-            <h3 className="text-lg font-black text-center" style={{ color: dm.text }}>
+            <TouchableOpacity
+              onPress={() => setActiveTab('past')}
+              activeOpacity={0.7}
+              style={[
+                styles.tabBtn,
+                activeTab === 'past' && { backgroundColor: COLORS.primary },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'past' ? '#FFFFFF' : dm.sub },
+                ]}
+              >
+                Histórico ({pastList.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* List */}
+          <View style={styles.listContainer}>
+            {currentList.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyBox,
+                  { backgroundColor: dm.card, borderColor: dm.border },
+                ]}
+              >
+                <Calendar size={36} color={dm.sub} />
+                <Text style={[styles.emptyText, { color: dm.sub }]}>
+                  Nenhuma consulta encontrada nesta categoria.
+                </Text>
+              </View>
+            ) : (
+              currentList.map((appt) => (
+                <View
+                  key={appt.id}
+                  style={[
+                    styles.apptCard,
+                    { backgroundColor: dm.card, borderColor: dm.border },
+                  ]}
+                >
+                  <View style={styles.apptTop}>
+                    <View style={styles.doctorInfo}>
+                      <View
+                        style={[
+                          styles.doctorIconBox,
+                          {
+                            backgroundColor:
+                              appt.type === 'teleconsulta'
+                                ? 'rgba(107, 127, 212, 0.15)'
+                                : `${COLORS.primary}18`,
+                          },
+                        ]}
+                      >
+                        {appt.type === 'teleconsulta' ? (
+                          <Video size={18} color="#6B7FD4" />
+                        ) : (
+                          <Stethoscope size={18} color={COLORS.primary} />
+                        )}
+                      </View>
+                      <View>
+                        <Text style={[styles.doctorName, { color: dm.text }]}>
+                          {appt.doctor}
+                        </Text>
+                        <Text style={[styles.doctorSpecialty, { color: dm.sub }]}>
+                          {appt.specialty}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {renderStatusBadge(appt.status)}
+                  </View>
+
+                  <View
+                    style={[
+                      styles.detailsBox,
+                      { backgroundColor: dm.inputBg },
+                    ]}
+                  >
+                    <View style={styles.detailRow}>
+                      <Calendar size={12} color="#94A3B8" />
+                      <Text style={[styles.detailText, { color: dm.text }]}>
+                        Data: {appt.date}
+                      </Text>
+                      <Clock size={12} color="#94A3B8" style={{ marginLeft: 8 }} />
+                      <Text style={[styles.detailText, { color: dm.text }]}>
+                        {appt.time}
+                      </Text>
+                    </View>
+
+                    <View style={styles.detailRow}>
+                      <Building2 size={12} color="#94A3B8" />
+                      <Text
+                        style={[styles.detailText, { color: dm.text }]}
+                        numberOfLines={1}
+                      >
+                        {appt.location || 'Teleconsulta Conecte SUS'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.detailRow}>
+                      <User size={12} color="#94A3B8" />
+                      <Text style={styles.bookedByText}>
+                        Agendado por: {appt.bookedBy}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {appt.notes && (
+                    <View style={styles.notesBox}>
+                      <Text style={styles.notesText}>
+                        📌 <Text style={{ fontWeight: '800' }}>Orientação:</Text> {appt.notes}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.actionRow}>
+                    {appt.type === 'teleconsulta' ? (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Alert.alert('Teleconsulta SUS', `Entrando na sala virtual com ${appt.doctor}...`)
+                        }
+                        activeOpacity={0.8}
+                        style={styles.virtualBtn}
+                      >
+                        <Video size={14} color="#FFFFFF" />
+                        <Text style={styles.virtualBtnText}>Entrar na Sala Virtual</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Alert.alert('Como Chegar', `Abrindo rota no mapa para: ${appt.location}`)
+                        }
+                        activeOpacity={0.7}
+                        style={[
+                          styles.mapBtn,
+                          { backgroundColor: dm.bg, borderColor: dm.border },
+                        ]}
+                      >
+                        <MapPin size={14} color="#EF4444" />
+                        <Text style={[styles.mapBtnText, { color: dm.text }]}>Como Chegar</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {appt.status !== 'cancelled' && (
+                      <TouchableOpacity
+                        onPress={() => setCancelModalAppt(appt)}
+                        activeOpacity={0.7}
+                        style={styles.trashBtn}
+                        accessibilityLabel="Cancelar consulta"
+                      >
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Cancel Bottom Modal */}
+      <Modal
+        visible={!!cancelModalAppt}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCancelModalAppt(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
+          >
+            <View style={styles.modalDragBar} />
+            <Text style={[styles.modalTitle, { color: dm.text }]}>
               Deseja Cancelar esta Consulta?
-            </h3>
-            <p className="text-xs text-slate-500 text-center mt-1">
-              Consulta com <strong>{cancelModalAppt.doctor}</strong> em {cancelModalAppt.date} às {cancelModalAppt.time}.
-            </p>
+            </Text>
+            <Text style={[styles.modalDesc, { color: dm.sub }]}>
+              Consulta com{' '}
+              <Text style={{ fontWeight: '800' }}>{cancelModalAppt?.doctor}</Text> em{' '}
+              {cancelModalAppt?.date} às {cancelModalAppt?.time}.
+            </Text>
 
-            <div className="flex items-center gap-3 mt-6">
-              <button
-                id="btn-keep-appointment"
-                type="button"
-                onClick={() => setCancelModalAppt(null)}
-                className="btn-press flex-1 py-3.5 rounded-xl font-bold text-xs border"
-                style={{
-                  backgroundColor: dm.bg,
-                  borderColor: dm.border,
-                  color: dm.text,
-                }}
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                onPress={() => setCancelModalAppt(null)}
+                style={[
+                  styles.keepBtn,
+                  { backgroundColor: dm.inputBg, borderColor: dm.border },
+                ]}
               >
-                Manter Agendamento
-              </button>
+                <Text style={[styles.keepBtnText, { color: dm.text }]}>
+                  Manter Agendamento
+                </Text>
+              </TouchableOpacity>
 
-              <button
-                id="btn-confirm-cancel-appointment"
-                type="button"
-                onClick={handleConfirmCancel}
-                className="btn-press flex-1 py-3.5 rounded-xl font-bold text-xs text-white bg-red-600 hover:bg-red-700 shadow-md"
+              <TouchableOpacity
+                onPress={handleConfirmCancel}
+                style={styles.confirmCancelBtn}
               >
-                Sim, Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                <Text style={styles.confirmCancelText}>Sim, Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    padding: 16,
+    gap: 14,
+  },
+  highlightCard: {
+    borderRadius: 20,
+    padding: 16,
+    elevation: 3,
+  },
+  highlightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  highlightTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  highlightTagText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  highlightDateTime: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  highlightDoctor: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  highlightSpecialty: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  highlightLocation: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    marginTop: 6,
+  },
+  tabsWrapper: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  listContainer: {
+    gap: 12,
+  },
+  emptyBox: {
+    borderRadius: 20,
+    padding: 32,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  apptCard: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    gap: 10,
+    elevation: 1,
+  },
+  apptTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  doctorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  doctorIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doctorName: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  doctorSpecialty: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  detailsBox: {
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  bookedByText: {
+    fontSize: 10,
+    color: '#94A3B8',
+  },
+  notesBox: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  notesText: {
+    fontSize: 11,
+    color: '#92400E',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 4,
+  },
+  virtualBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#3D6E9F',
+  },
+  virtualBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  mapBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  mapBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  trashBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    borderTopWidth: 1,
+  },
+  modalDragBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  modalDesc: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keepBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+});

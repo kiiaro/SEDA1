@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Calendar, Filter, HeartPulse, Droplets, Activity, Plus } from 'lucide-react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Calendar, HeartPulse, Droplets, Activity, Plus } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord, Screen } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
@@ -21,142 +29,299 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
   ];
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
-      {/* Top Header */}
-      <div
-        className="px-5 pt-3 pb-5 text-white"
-        style={{
-          background: 'linear-gradient(160deg, #1E3A5F 0%, #3D6E9F 100%)',
-        }}
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <LinearGradient
+        colors={['#1E3A5F', '#3D6E9F']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-white">Histórico de Saúde</h1>
-            <p className="text-xs text-blue-100 font-medium">Registros diários e aferições</p>
-          </div>
-          <button
-            id="btn-history-add-new"
-            type="button"
-            onClick={() => onNavigate('pressure')}
-            className="btn-press flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-xs border border-white/30"
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerTitle}>Histórico de Saúde</Text>
+            <Text style={styles.headerSub}>Registros diários e aferições</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => onNavigate('pressure')}
+            activeOpacity={0.8}
+            style={styles.newBtn}
           >
-            <Plus className="w-4 h-4" />
-            <span>Novo</span>
-          </button>
-        </div>
+            <Plus size={16} color="#FFFFFF" />
+            <Text style={styles.newBtnText}>Novo</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2">
+        <View style={styles.filtersRow}>
           {filterOptions.map((opt) => {
             const isSelected = filterPeriod === opt.id;
             return (
-              <button
-                id={`btn-filter-${opt.id}`}
+              <TouchableOpacity
                 key={opt.id}
-                type="button"
-                onClick={() => setFilterPeriod(opt.id)}
-                className="btn-press px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                style={{
-                  backgroundColor: isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.18)',
-                  color: isSelected ? '#1E3A5F' : '#FFFFFF',
-                  boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-                }}
+                onPress={() => setFilterPeriod(opt.id)}
+                activeOpacity={0.7}
+                style={[
+                  styles.filterPill,
+                  {
+                    backgroundColor: isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.18)',
+                  },
+                ]}
               >
-                {opt.label}
-              </button>
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    { color: isSelected ? '#1E3A5F' : '#FFFFFF' },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
             );
           })}
-        </div>
-      </div>
+        </View>
+      </LinearGradient>
 
-      {/* List of Staggered Cards */}
-      <div className="p-4 space-y-3">
-        {records.map((rec, index) => (
-          <div
+      {/* Records List */}
+      <View style={styles.recordsList}>
+        {records.map((rec) => (
+          <View
             key={rec.id}
-            className="rounded-2xl p-4 border shadow-xs transition-all animate-float-up"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-              animationDelay: `${index * 0.06}s`,
-            }}
+            style={[
+              styles.recordCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            {/* Top row with Date/Time and StatusBadge */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: dm.text }}>
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>{rec.date}</span>
-                <span className="text-slate-400 font-normal">• {rec.time}</span>
-              </div>
+            {/* Card Header */}
+            <View style={styles.recordCardHeader}>
+              <View style={styles.dateWrapper}>
+                <Calendar size={14} color={dm.sub} />
+                <Text style={[styles.recordDate, { color: dm.text }]}>
+                  {rec.date}
+                </Text>
+                <Text style={[styles.recordTime, { color: dm.sub }]}>
+                  • {rec.time}
+                </Text>
+              </View>
               <StatusBadge status={rec.status} />
-            </div>
+            </View>
 
-            {/* 3 Color-Coded Mini Cards (Pressão: azul, Glicemia: amarelo, BPM: verde) */}
-            <div className="grid grid-cols-3 gap-2">
-              {/* Pressão (Azul) */}
-              <div
-                className="p-2.5 rounded-xl text-center flex flex-col items-center justify-center border"
-                style={{
-                  backgroundColor: 'rgba(94, 143, 192, 0.12)',
-                  borderColor: 'rgba(94, 143, 192, 0.25)',
-                }}
-              >
-                <div className="flex items-center gap-1 text-[10px] font-bold text-sky-800 dark:text-sky-300 mb-0.5">
-                  <HeartPulse className="w-3 h-3" />
-                  <span>Pressão</span>
-                </div>
-                <span className="text-sm font-black text-sky-950 dark:text-sky-100">
+            {/* 3 Metric Mini Cards */}
+            <View style={styles.metricsRow}>
+              {/* Pressão */}
+              <View style={[styles.metricBox, styles.pressBox]}>
+                <View style={styles.metricLabelRow}>
+                  <HeartPulse size={12} color="#0369A1" />
+                  <Text style={styles.pressLabel}>Pressão</Text>
+                </View>
+                <Text style={styles.pressVal}>
                   {rec.systolic}/{rec.diastolic}
-                </span>
-                <span className="text-[9px] text-slate-500">mmHg</span>
-              </div>
+                </Text>
+                <Text style={styles.metricUnit}>mmHg</Text>
+              </View>
 
-              {/* Glicemia (Amarelo) */}
-              <div
-                className="p-2.5 rounded-xl text-center flex flex-col items-center justify-center border"
-                style={{
-                  backgroundColor: 'rgba(244, 183, 64, 0.14)',
-                  borderColor: 'rgba(244, 183, 64, 0.3)',
-                }}
-              >
-                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 mb-0.5">
-                  <Droplets className="w-3 h-3" />
-                  <span>Glicose</span>
-                </div>
-                <span className="text-sm font-black text-amber-950 dark:text-amber-100">
-                  {rec.glucose}
-                </span>
-                <span className="text-[9px] text-slate-500">mg/dL</span>
-              </div>
+              {/* Glicemia */}
+              <View style={[styles.metricBox, styles.glucBox]}>
+                <View style={styles.metricLabelRow}>
+                  <Droplets size={12} color="#B45309" />
+                  <Text style={styles.glucLabel}>Glicose</Text>
+                </View>
+                <Text style={styles.glucVal}>{rec.glucose}</Text>
+                <Text style={styles.metricUnit}>mg/dL</Text>
+              </View>
 
-              {/* BPM (Verde) */}
-              <div
-                className="p-2.5 rounded-xl text-center flex flex-col items-center justify-center border"
-                style={{
-                  backgroundColor: 'rgba(89, 185, 138, 0.14)',
-                  borderColor: 'rgba(89, 185, 138, 0.3)',
-                }}
-              >
-                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 mb-0.5">
-                  <Activity className="w-3 h-3" />
-                  <span>Pulso</span>
-                </div>
-                <span className="text-sm font-black text-emerald-950 dark:text-emerald-100">
-                  {rec.heartRate}
-                </span>
-                <span className="text-[9px] text-slate-500">bpm</span>
-              </div>
-            </div>
+              {/* Pulso */}
+              <View style={[styles.metricBox, styles.pulseBox]}>
+                <View style={styles.metricLabelRow}>
+                  <Activity size={12} color="#047857" />
+                  <Text style={styles.pulseLabel}>Pulso</Text>
+                </View>
+                <Text style={styles.pulseVal}>{rec.heartRate}</Text>
+                <Text style={styles.metricUnit}>bpm</Text>
+              </View>
+            </View>
 
-            {/* Notes if any */}
-            {rec.notes && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 italic pl-2 border-l-2 border-slate-300 dark:border-slate-700">
-                "{rec.notes}"
-              </p>
-            )}
-          </div>
+            {/* Notes */}
+            {rec.notes ? (
+              <View style={styles.notesBox}>
+                <Text style={[styles.notesText, { color: dm.sub }]}>
+                  "{rec.notes}"
+                </Text>
+              </View>
+            ) : null}
+          </View>
         ))}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  headerSub: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
+  },
+  newBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  newBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  recordsList: {
+    padding: 16,
+    gap: 12,
+  },
+  recordCard: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  recordCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  dateWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recordDate: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  recordTime: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  metricBox: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  pressBox: {
+    backgroundColor: 'rgba(94, 143, 192, 0.12)',
+    borderColor: 'rgba(94, 143, 192, 0.25)',
+  },
+  glucBox: {
+    backgroundColor: 'rgba(244, 183, 64, 0.14)',
+    borderColor: 'rgba(244, 183, 64, 0.3)',
+  },
+  pulseBox: {
+    backgroundColor: 'rgba(89, 185, 138, 0.14)',
+    borderColor: 'rgba(89, 185, 138, 0.3)',
+  },
+  metricLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  pressLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  glucLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  pulseLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  pressVal: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0C4A6E',
+  },
+  glucVal: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#78350F',
+  },
+  pulseVal: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#064E3B',
+  },
+  metricUnit: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  notesBox: {
+    marginTop: 10,
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#CBD5E1',
+  },
+  notesText: {
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+});

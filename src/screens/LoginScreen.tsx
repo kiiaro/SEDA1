@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ShieldCheck, Heart, Activity, ArrowRight, UserCheck } from 'lucide-react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Eye, EyeOff, Heart, ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen } from '../types';
 
@@ -11,198 +21,350 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, dm }) => {
   const [cpf, setCpf] = useState('123.456.789-00');
-  const [password, setPassword] = useState('••••••••');
+  const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<'cpf' | 'pass' | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLogin();
+  const handleForgotPass = () => {
+    Alert.alert(
+      'Recuperação de Senha',
+      'Instruções enviadas com sucesso para o WhatsApp e e-mail cadastrados no Conecte SUS!'
+    );
   };
 
   return (
-    <div className="flex-1 flex flex-col select-none transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
-      {/* Header Gradient with SEDA Logo */}
-      <div
-        className="relative pt-6 pb-12 px-6 flex flex-col items-center justify-center text-white"
-        style={{
-          background: 'linear-gradient(160deg, #3D6E9F 0%, #5E8FC0 100%)',
-        }}
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header Gradient */}
+      <LinearGradient
+        colors={['#1E3A5F', '#3D6E9F']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
       >
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 animate-heartbeat">
-            <Heart className="w-5 h-5 text-white fill-white" />
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">SEDA</h1>
-        </div>
-        <p className="text-xs text-blue-100 font-medium">Equilíbrio de Pressão & Diabetes • SUS</p>
-      </div>
+        <View style={styles.logoRow}>
+          <View style={styles.heartBox}>
+            <Heart size={20} color="#FFFFFF" fill="#FFFFFF" />
+          </View>
+          <Text style={styles.brandTitle}>SEDA</Text>
+        </View>
+        <Text style={styles.brandSubtitle}>
+          Equilíbrio de Pressão & Diabetes • SUS
+        </Text>
+      </LinearGradient>
 
-      {/* Overlapping Card (borderRadius: 28px, marginTop: -24) */}
-      <div
-        className="flex-1 px-6 pt-6 pb-6 -mt-6 rounded-t-[28px] shadow-xl flex flex-col justify-between"
-        style={{
-          backgroundColor: dm.card,
-          borderTop: `1px solid ${dm.border}`,
-        }}
+      {/* Main Card */}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: dm.card,
+            borderColor: dm.border,
+          },
+        ]}
       >
-        <div>
-          {/* Progress Strip: 2 colored divs */}
-          <div className="flex items-center gap-2 mb-5">
-            <div className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: COLORS.primary }} />
-            <div className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: `${COLORS.primary}30` }} />
-          </div>
+        {/* Progress Strip */}
+        <View style={styles.progressRow}>
+          <View style={[styles.progressBar, { backgroundColor: COLORS.primary }]} />
+          <View
+            style={[
+              styles.progressBar,
+              { backgroundColor: 'rgba(94, 143, 192, 0.25)' },
+            ]}
+          />
+        </View>
 
-          <div className="mb-5">
-            <h2 className="text-xl font-bold tracking-tight" style={{ color: dm.text }}>
-              Acesse sua Conta
-            </h2>
-            <p className="text-xs mt-1" style={{ color: dm.sub }}>
-              Insira seu CPF ou cartão SUS para continuar
-            </p>
-          </div>
+        <View style={styles.titleSection}>
+          <Text style={[styles.title, { color: dm.text }]}>Acesse sua Conta</Text>
+          <Text style={[styles.subtitle, { color: dm.sub }]}>
+            Insira seu CPF ou cartão SUS para continuar
+          </Text>
+        </View>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* CPF Field */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: dm.sub }}>
-                CPF ou Número SUS
-              </label>
-              <input
-                id="input-cpf"
-                type="text"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                onFocus={() => setFocusedField('cpf')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="000.000.000-00"
-                className="w-full px-4 py-3.5 rounded-xl text-sm font-medium transition-all outline-hidden border"
-                style={{
+        {/* Input Fields */}
+        <View style={styles.formGroup}>
+          <Text style={[styles.inputLabel, { color: dm.sub }]}>
+            CPF ou Número SUS
+          </Text>
+          <TextInput
+            value={cpf}
+            onChangeText={setCpf}
+            onFocus={() => setFocusedField('cpf')}
+            onBlur={() => setFocusedField(null)}
+            placeholder="000.000.000-00"
+            placeholderTextColor={dm.sub}
+            style={[
+              styles.input,
+              {
+                backgroundColor: dm.inputBg,
+                color: dm.text,
+                borderColor: focusedField === 'cpf' ? COLORS.primary : dm.border,
+              },
+            ]}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <View style={styles.labelRow}>
+            <Text style={[styles.inputLabel, { color: dm.sub }]}>
+              Senha de Acesso
+            </Text>
+            <TouchableOpacity onPress={handleForgotPass}>
+              <Text style={[styles.forgotText, { color: COLORS.primary }]}>
+                Esqueci a senha
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              onFocus={() => setFocusedField('pass')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="••••••••"
+              placeholderTextColor={dm.sub}
+              style={[
+                styles.input,
+                styles.passwordInput,
+                {
                   backgroundColor: dm.inputBg,
                   color: dm.text,
-                  borderColor: focusedField === 'cpf' ? COLORS.primary : dm.border,
-                  boxShadow: focusedField === 'cpf' ? `0 0 0 3px ${COLORS.primary}25` : 'none',
-                }}
-              />
-            </div>
-
-            {/* Password Field with Eye/EyeOff toggle */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: dm.sub }}>
-                  Senha de Acesso
-                </label>
-                <button
-                  id="btn-forgot-password"
-                  type="button"
-                  onClick={() => alert('Instruções de recuperação enviadas para o WhatsApp e e-mail cadastrados!')}
-                  className="text-xs font-medium text-sky-600 dark:text-sky-400 hover:underline"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  id="input-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocusedField('pass')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="••••••••"
-                  className="w-full pl-4 pr-12 py-3.5 rounded-xl text-sm font-medium transition-all outline-hidden border"
-                  style={{
-                    backgroundColor: dm.inputBg,
-                    color: dm.text,
-                    borderColor: focusedField === 'pass' ? COLORS.primary : dm.border,
-                    boxShadow: focusedField === 'pass' ? `0 0 0 3px ${COLORS.primary}25` : 'none',
-                  }}
-                />
-                <button
-                  id="btn-toggle-password"
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <button
-              id="btn-submit-login"
-              type="submit"
-              className="btn-press w-full py-4 rounded-xl font-bold text-white text-base shadow-md flex items-center justify-center gap-2 mt-3 transition-all"
-              style={{
-                backgroundColor: COLORS.primary,
-                boxShadow: `0 8px 20px ${COLORS.primary}40`,
-              }}
+                  borderColor: focusedField === 'pass' ? COLORS.primary : dm.border,
+                },
+              ]}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeBtn}
             >
-              <span>Entrar no SEDA</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </form>
+              {showPassword ? (
+                <EyeOff size={20} color={dm.sub} />
+              ) : (
+                <Eye size={20} color={dm.sub} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
-          {/* Divider */}
-          <div className="relative flex py-4 items-center">
-            <div className="flex-grow border-t" style={{ borderColor: dm.border }} />
-            <span className="flex-shrink mx-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              ou
-            </span>
-            <div className="flex-grow border-t" style={{ borderColor: dm.border }} />
-          </div>
+        {/* Login Button */}
+        <TouchableOpacity
+          onPress={onLogin}
+          activeOpacity={0.8}
+          style={[styles.loginBtn, { backgroundColor: COLORS.primary }]}
+        >
+          <Text style={styles.loginBtnText}>Entrar no SEDA</Text>
+          <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
 
-          {/* Google Login Inline SVG */}
-          <button
-            id="btn-google-login"
-            type="button"
-            onClick={onLogin}
-            className="btn-press w-full py-3.5 px-4 rounded-xl border flex items-center justify-center gap-3 text-xs font-bold transition-all"
-            style={{
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: dm.border }]} />
+          <Text style={styles.dividerText}>OU</Text>
+          <View style={[styles.dividerLine, { backgroundColor: dm.border }]} />
+        </View>
+
+        {/* Gov.br Button */}
+        <TouchableOpacity
+          onPress={onLogin}
+          activeOpacity={0.7}
+          style={[
+            styles.govBtn,
+            {
               backgroundColor: dm.inputBg,
               borderColor: dm.border,
-              color: dm.text,
-            }}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-              />
-            </svg>
-            <span>Continuar com Gov.br / Google</span>
-          </button>
-        </div>
+            },
+          ]}
+        >
+          <Text style={[styles.govBtnText, { color: dm.text }]}>
+            Continuar com Gov.br / Conecte SUS
+          </Text>
+        </TouchableOpacity>
 
-        {/* Bottom Switch to Register */}
-        <div className="pt-4 text-center">
-          <p className="text-xs" style={{ color: dm.sub }}>
+        {/* Bottom Switch */}
+        <View style={styles.bottomRow}>
+          <Text style={[styles.bottomText, { color: dm.sub }]}>
             Primeiro acesso?{' '}
-            <button
-              id="btn-goto-register"
-              type="button"
-              onClick={() => onNavigate('register')}
-              className="font-bold text-sky-600 dark:text-sky-400 hover:underline ml-1"
-            >
+          </Text>
+          <TouchableOpacity onPress={() => onNavigate('register')}>
+            <Text style={[styles.registerLink, { color: COLORS.primary }]}>
               Criar meu cadastro
-            </button>
-          </p>
-        </div>
-      </div>
-    </div>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
+  },
+  header: {
+    paddingTop: 36,
+    paddingBottom: 48,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  heartBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -1,
+  },
+  brandSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '600',
+  },
+  card: {
+    flex: 1,
+    marginTop: -24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    borderTopWidth: 1,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+  },
+  titleSection: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  forgotText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  input: {
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    fontSize: 15,
+    borderWidth: 1.5,
+    fontWeight: '600',
+  },
+  passwordWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    padding: 4,
+  },
+  loginBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 8,
+    elevation: 4,
+  },
+  loginBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  govBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  govBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    paddingBottom: 12,
+  },
+  bottomText: {
+    fontSize: 13,
+  },
+  registerLink: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});

@@ -1,5 +1,22 @@
 import React, { useState } from 'react';
-import { Users, Phone, MessageCircle, Plus, ShieldCheck, Heart, UserPlus, X } from 'lucide-react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Modal,
+  Linking,
+} from 'react-native';
+import {
+  Phone,
+  MessageCircle,
+  Plus,
+  ShieldCheck,
+  UserPlus,
+  X,
+} from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FamilyMember } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -23,8 +40,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
   const [newRole, setNewRole] = useState<'Familiar' | 'SUS'>('Familiar');
   const [newPhone, setNewPhone] = useState('(11) 9');
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddSubmit = () => {
     if (!newName.trim()) return;
 
     const initials = newName
@@ -50,45 +66,60 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
     setNewName('');
   };
 
+  const handleCall = (phone: string) => {
+    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`);
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    Linking.openURL(`https://wa.me/55${phone.replace(/\D/g, '')}`);
+  };
+
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Rede de Cuidado"
         subtitle="Familiares, cuidadores e equipe de saúde SUS"
         onBack={onBack}
-        bgGradient="linear-gradient(160deg, #0F766E 0%, #7CC9BE 100%)"
+        bgGradient={['#0F766E', '#7CC9BE']}
         rightElement={
-          <button
-            id="btn-open-add-member"
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="btn-press p-2 rounded-full bg-white/20 hover:bg-white/30 text-white"
-            aria-label="Adicionar cuidador"
+          <TouchableOpacity
+            onPress={() => setShowAddModal(true)}
+            activeOpacity={0.7}
+            style={styles.headerBtn}
+            accessibilityLabel="Adicionar cuidador"
           >
-            <UserPlus className="w-4 h-4" />
-          </button>
+            <UserPlus size={16} color="#FFFFFF" />
+          </TouchableOpacity>
         }
       />
 
-      <div className="p-4 space-y-2">
+      <View style={styles.content}>
         {/* Info Banner */}
-        <div
-          className="rounded-2xl p-3.5 border flex items-center gap-3 mb-3"
-          style={{
-            backgroundColor: 'rgba(124, 201, 190, 0.15)',
-            borderColor: 'rgba(124, 201, 190, 0.3)',
-          }}
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: 'rgba(124, 201, 190, 0.15)',
+              borderColor: 'rgba(124, 201, 190, 0.3)',
+            },
+          ]}
         >
-          <ShieldCheck className="w-6 h-6 text-teal-700 dark:text-teal-400 shrink-0" />
-          <p className="text-xs font-semibold text-teal-950 dark:text-teal-200 leading-snug">
+          <ShieldCheck size={24} color="#0F766E" />
+          <Text style={styles.bannerText}>
             Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
-            <strong className="text-teal-600 dark:text-teal-300">Familiar / SUS</strong> recebem alerta imediato.
-          </p>
-        </div>
+            <Text style={{ fontWeight: '800', color: '#0F766E' }}>
+              Familiar / SUS
+            </Text>{' '}
+            recebem alerta imediato.
+          </Text>
+        </View>
 
-        {/* Family Cards with vertical connector line */}
+        {/* Member Cards */}
         {family.map((member, index) => {
-          // Status dot color (online -> success, away -> warn, busy -> danger)
           const dotColor =
             member.status === 'online'
               ? COLORS.success
@@ -98,246 +129,493 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
 
           return (
             <React.Fragment key={member.id}>
-              <div
-                className="rounded-2xl p-4 border shadow-xs transition-all flex items-center justify-between gap-3 animate-float-up"
-                style={{
-                  backgroundColor: dm.card,
-                  borderColor: dm.border,
-                  animationDelay: `${index * 0.06}s`,
-                }}
+              <View
+                style={[
+                  styles.memberCard,
+                  { backgroundColor: dm.card, borderColor: dm.border },
+                ]}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar with color ring and status dot */}
-                  <div className="relative shrink-0">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-sm border-2 shadow-xs"
-                      style={{
-                        backgroundColor: member.avatarBg,
-                        borderColor: member.avatarBg,
-                      }}
+                <View style={styles.memberLeft}>
+                  {/* Avatar */}
+                  <View style={styles.avatarWrapper}>
+                    <View
+                      style={[
+                        styles.avatar,
+                        { backgroundColor: member.avatarBg },
+                      ]}
                     >
-                      {member.initials}
-                    </div>
-
-                    {/* Status Dot (13x13px) in bottom right */}
-                    <span
-                      className="absolute bottom-0 right-0 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-xs"
-                      style={{
-                        width: 13,
-                        height: 13,
-                        backgroundColor: dotColor,
-                      }}
+                      <Text style={styles.avatarText}>{member.initials}</Text>
+                    </View>
+                    <View
+                      style={[styles.statusDot, { backgroundColor: dotColor }]}
                     />
-                  </div>
+                  </View>
 
-                  {/* Name and Relation */}
-                  <div className="min-w-0 truncate">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-bold truncate" style={{ color: dm.text }}>
-                        {member.name}
-                      </h3>
-                      {/* Relation Badge */}
-                      <span
-                        className="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"
-                        style={{
-                          backgroundColor: `${member.avatarBg}20`,
-                          color: member.avatarBg,
-                        }}
+                  {/* Info */}
+                  <View style={styles.memberInfo}>
+                    <View style={styles.memberNameRow}>
+                      <Text
+                        style={[styles.memberName, { color: dm.text }]}
+                        numberOfLines={1}
                       >
-                        {member.role}
-                      </span>
-                    </div>
+                        {member.name}
+                      </Text>
+                      <View
+                        style={[
+                          styles.roleBadge,
+                          { backgroundColor: `${member.avatarBg}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.roleBadgeText,
+                            { color: member.avatarBg },
+                          ]}
+                        >
+                          {member.role}
+                        </Text>
+                      </View>
+                    </View>
 
-                    <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                      {member.relation}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">{member.lastSeen}</p>
-                  </div>
-                </div>
+                    <Text style={styles.memberRelation}>{member.relation}</Text>
+                    <Text style={styles.memberLastSeen}>{member.lastSeen}</Text>
+                  </View>
+                </View>
 
-                {/* Direct Action triggers (Call / WhatsApp) */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <a
-                    href={`tel:${member.phone.replace(/\D/g, '')}`}
-                    className="btn-press w-9 h-9 rounded-xl flex items-center justify-center border transition-all"
-                    style={{
-                      backgroundColor: `${COLORS.primary}15`,
-                      borderColor: `${COLORS.primary}30`,
-                      color: COLORS.primary,
-                    }}
-                    aria-label={`Ligar para ${member.name}`}
+                {/* Direct Action triggers */}
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    onPress={() => handleCall(member.phone)}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.actionIconBtn,
+                      {
+                        backgroundColor: `${COLORS.primary}15`,
+                        borderColor: `${COLORS.primary}30`,
+                      },
+                    ]}
+                    accessibilityLabel={`Ligar para ${member.name}`}
                   >
-                    <Phone className="w-4 h-4" />
-                  </a>
+                    <Phone size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
 
-                  <a
-                    href={`https://wa.me/55${member.phone.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-press w-9 h-9 rounded-xl flex items-center justify-center border transition-all"
-                    style={{
-                      backgroundColor: 'rgba(47, 191, 113, 0.15)',
-                      borderColor: 'rgba(47, 191, 113, 0.3)',
-                      color: COLORS.success,
-                    }}
-                    aria-label={`WhatsApp com ${member.name}`}
+                  <TouchableOpacity
+                    onPress={() => handleWhatsApp(member.phone)}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.actionIconBtn,
+                      {
+                        backgroundColor: 'rgba(47, 191, 113, 0.15)',
+                        borderColor: 'rgba(47, 191, 113, 0.3)',
+                      },
+                    ]}
+                    accessibilityLabel={`WhatsApp com ${member.name}`}
                   >
-                    <MessageCircle className="w-4 h-4" />
-                  </a>
-                </div>
-              </div>
+                    <MessageCircle size={16} color={COLORS.success} />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-              {/* Vertical connector line (2x14px) between cards */}
+              {/* Vertical connector */}
               {index < family.length - 1 && (
-                <div className="w-full flex justify-center py-0.5">
-                  <div
-                    style={{
-                      width: 2,
-                      height: 14,
-                      backgroundColor: dm.isDark ? '#334155' : '#CBD5E1',
-                    }}
+                <View style={styles.connectorWrapper}>
+                  <View
+                    style={[
+                      styles.connectorLine,
+                      { backgroundColor: dm.isDark ? '#334155' : '#CBD5E1' },
+                    ]}
                   />
-                </div>
+                </View>
               )}
             </React.Fragment>
           );
         })}
 
         {/* Dashed Add Button */}
-        <button
-          id="btn-dashed-add-caregiver"
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="btn-press w-full py-3.5 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-bold transition-all mt-3"
-          style={{
-            borderColor: COLORS.primary,
-            color: COLORS.primary,
-            backgroundColor: `${COLORS.primary}08`,
-          }}
+        <TouchableOpacity
+          onPress={() => setShowAddModal(true)}
+          activeOpacity={0.7}
+          style={[
+            styles.dashedBtn,
+            {
+              borderColor: COLORS.primary,
+              backgroundColor: `${COLORS.primary}08`,
+            },
+          ]}
         >
-          <Plus className="w-4 h-4" />
-          <span>Adicionar Novo Cuidador ou Profissional</span>
-        </button>
-      </div>
+          <Plus size={18} color={COLORS.primary} />
+          <Text style={[styles.dashedBtnText, { color: COLORS.primary }]}>
+            Adicionar Novo Cuidador ou Profissional
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Add Caregiver Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div
-            className="w-full max-w-sm rounded-3xl p-5 shadow-2xl border animate-float-up"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+      {/* Add Modal */}
+      <Modal
+        visible={showAddModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold" style={{ color: dm.text }}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: dm.text }]}>
                 Novo Cuidador / Rede SUS
-              </h3>
-              <button
-                id="btn-close-family-modal"
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowAddModal(false)}
+                style={styles.modalCloseBtn}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                <X size={20} color={dm.sub} />
+              </TouchableOpacity>
+            </View>
 
-            <form onSubmit={handleAddSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+            <View style={styles.modalBody}>
+              <View style={styles.formItem}>
+                <Text style={[styles.modalLabel, { color: dm.sub }]}>
                   Nome Completo
-                </label>
-                <input
-                  id="input-fam-name"
-                  type="text"
+                </Text>
+                <TextInput
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  onChangeText={setNewName}
                   placeholder="Ex: Carlos Eduardo Silva"
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold outline-hidden"
-                  style={{
-                    backgroundColor: dm.bg,
-                    borderColor: dm.border,
-                    color: dm.text,
-                  }}
+                  placeholderTextColor={dm.sub}
+                  style={[
+                    styles.modalInput,
+                    {
+                      backgroundColor: dm.inputBg,
+                      borderColor: dm.border,
+                      color: dm.text,
+                    },
+                  ]}
                 />
-              </div>
+              </View>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+              <View style={styles.row}>
+                <View style={[styles.formItem, { flex: 1 }]}>
+                  <Text style={[styles.modalLabel, { color: dm.sub }]}>
                     Vínculo
-                  </label>
-                  <input
-                    id="input-fam-rel"
-                    type="text"
+                  </Text>
+                  <TextInput
                     value={newRelation}
-                    onChange={(e) => setNewRelation(e.target.value)}
+                    onChangeText={setNewRelation}
                     placeholder="Ex: Filho / Vizinho"
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold outline-hidden"
-                    style={{
-                      backgroundColor: dm.bg,
-                      borderColor: dm.border,
-                      color: dm.text,
-                    }}
+                    placeholderTextColor={dm.sub}
+                    style={[
+                      styles.modalInput,
+                      {
+                        backgroundColor: dm.inputBg,
+                        borderColor: dm.border,
+                        color: dm.text,
+                      },
+                    ]}
                   />
-                </div>
+                </View>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <View style={[styles.formItem, { flex: 1 }]}>
+                  <Text style={[styles.modalLabel, { color: dm.sub }]}>
                     Categoria
-                  </label>
-                  <select
-                    id="select-fam-role"
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as 'Familiar' | 'SUS')}
-                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold outline-hidden"
-                    style={{
-                      backgroundColor: dm.bg,
+                  </Text>
+                  <View style={styles.roleToggleRow}>
+                    <TouchableOpacity
+                      onPress={() => setNewRole('Familiar')}
+                      style={[
+                        styles.roleToggleBtn,
+                        newRole === 'Familiar' && { backgroundColor: COLORS.primary },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roleToggleText,
+                          { color: newRole === 'Familiar' ? '#FFFFFF' : dm.sub },
+                        ]}
+                      >
+                        Família
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setNewRole('SUS')}
+                      style={[
+                        styles.roleToggleBtn,
+                        newRole === 'SUS' && { backgroundColor: COLORS.primary },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roleToggleText,
+                          { color: newRole === 'SUS' ? '#FFFFFF' : dm.sub },
+                        ]}
+                      >
+                        SUS
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.formItem}>
+                <Text style={[styles.modalLabel, { color: dm.sub }]}>
+                  Telefone / WhatsApp
+                </Text>
+                <TextInput
+                  value={newPhone}
+                  onChangeText={setNewPhone}
+                  style={[
+                    styles.modalInput,
+                    {
+                      backgroundColor: dm.inputBg,
                       borderColor: dm.border,
                       color: dm.text,
-                    }}
-                  >
-                    <option value="Familiar">Familiar / Cuidador</option>
-                    <option value="SUS">Equipe de Saúde SUS</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                  Telefone / WhatsApp
-                </label>
-                <input
-                  id="input-fam-phone"
-                  type="text"
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold outline-hidden"
-                  style={{
-                    backgroundColor: dm.bg,
-                    borderColor: dm.border,
-                    color: dm.text,
-                  }}
+                    },
+                  ]}
                 />
-              </div>
+              </View>
 
-              <button
-                id="btn-submit-fam"
-                type="submit"
-                className="btn-press w-full py-3 rounded-xl font-bold text-white text-xs shadow-md mt-2"
-                style={{ backgroundColor: COLORS.primary }}
+              <TouchableOpacity
+                onPress={handleAddSubmit}
+                activeOpacity={0.8}
+                style={[
+                  styles.modalSubmitBtn,
+                  { backgroundColor: COLORS.primary },
+                ]}
               >
-                Salvar na Rede de Cuidado
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+                <Text style={styles.modalSubmitText}>
+                  Salvar na Rede de Cuidado
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    padding: 16,
+  },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  bannerText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#042F2E',
+  },
+  memberCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  memberLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  memberName: {
+    fontSize: 13,
+    fontWeight: '800',
+    maxWidth: 110,
+  },
+  roleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  roleBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  memberRelation: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  memberLastSeen: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  connectorWrapper: {
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  connectorLine: {
+    width: 2,
+    height: 12,
+  },
+  dashedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginTop: 14,
+  },
+  dashedBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    gap: 12,
+  },
+  formItem: {
+    gap: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  modalInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  roleToggleRow: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    overflow: 'hidden',
+  },
+  roleToggleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleToggleText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  modalSubmitBtn: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  modalSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});

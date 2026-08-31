@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, CheckCircle2, Sparkles, Volume2, ArrowRight, RefreshCw, MessageSquare } from 'lucide-react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import {
+  Mic,
+  MicOff,
+  CheckCircle2,
+  Sparkles,
+  ArrowRight,
+  MessageSquare,
+} from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -28,7 +42,6 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
   } | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Audio wave animation while listening
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isListening) {
@@ -43,7 +56,6 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
     };
   }, [isListening]);
 
-  // Voice recognition simulation timer
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (isListening) {
@@ -100,169 +112,329 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
   ];
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Assistente de Voz SEDA"
         subtitle="Dite suas medições sem precisar digitar"
         onBack={onBack}
-        bgGradient="linear-gradient(160deg, #4F46E5 0%, #6B7FD4 100%)"
+        bgGradient={['#4F46E5', '#6B7FD4']}
       />
 
-      <div className="flex-1 p-5 flex flex-col justify-between items-center text-center">
-        {/* Top Status & Audio Waveform */}
-        <div className="w-full">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span
-              className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-              style={{
-                backgroundColor: isListening ? 'rgba(239,68,68,0.15)' : `${COLORS.purple}18`,
-                color: isListening ? '#dc2626' : COLORS.purple,
-              }}
-            >
-              {isListening ? 'Escutando você agora...' : 'Toque no microfone e fale'}
-            </span>
-          </div>
+      <View style={styles.body}>
+        {/* Status Chip */}
+        <View
+          style={[
+            styles.statusChip,
+            {
+              backgroundColor: isListening ? 'rgba(239,68,68,0.15)' : `${COLORS.purple}18`,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusChipText,
+              { color: isListening ? '#DC2626' : COLORS.purple },
+            ]}
+          >
+            {isListening ? 'Escutando você agora...' : 'Toque no microfone e fale'}
+          </Text>
+        </View>
 
-          {/* 12 Animated Waveform Bars */}
-          <div className="h-16 flex items-center justify-center gap-1.5 py-2">
-            {waves.map((w, i) => (
-              <div
-                key={i}
-                className="w-1.5 rounded-full transition-all duration-100"
-                style={{
+        {/* Waves */}
+        <View style={styles.wavesContainer}>
+          {waves.map((w, i) => (
+            <View
+              key={i}
+              style={[
+                styles.waveBar,
+                {
                   height: Math.max(8, w * 56),
                   backgroundColor: isListening ? COLORS.purple : `${COLORS.purple}40`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
+                },
+              ]}
+            />
+          ))}
+        </View>
 
-        {/* Big Central Mic Button (120x120px) with 2 pulse rings */}
-        <div className="relative my-4 flex items-center justify-center">
+        {/* Central Mic Button */}
+        <View style={styles.micWrapper}>
           {isListening && (
             <>
-              <div
-                className="absolute rounded-full border-2 border-indigo-400 animate-pulse-ring"
-                style={{ width: 170, height: 170 }}
-              />
-              <div
-                className="absolute rounded-full border-2 border-indigo-300 animate-pulse-ring"
-                style={{ width: 210, height: 210, animationDelay: '0.4s' }}
-              />
+              <View style={[styles.pulseRing, styles.pulseRing1]} />
+              <View style={[styles.pulseRing, styles.pulseRing2]} />
             </>
           )}
 
-          <button
-            id="btn-voice-mic-main"
-            type="button"
-            onClick={handleToggleListening}
-            className="btn-press relative rounded-full flex items-center justify-center shadow-xl transition-all z-10"
-            style={{
-              width: 120,
-              height: 120,
-              background: isListening
-                ? 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)'
-                : '#E0E8F8',
-              color: isListening ? '#FFFFFF' : COLORS.purple,
-              boxShadow: isListening
-                ? '0 12px 36px rgba(79, 70, 229, 0.45)'
-                : '0 8px 24px rgba(107, 127, 212, 0.25)',
-            }}
-            aria-label={isListening ? 'Parar gravação' : 'Iniciar escuta por voz'}
+          <TouchableOpacity
+            onPress={handleToggleListening}
+            activeOpacity={0.8}
+            style={[
+              styles.micBtn,
+              {
+                backgroundColor: isListening ? '#4F46E5' : '#E0E8F8',
+              },
+            ]}
           >
             {isListening ? (
-              <MicOff className="w-12 h-12 stroke-[2.2]" />
+              <MicOff size={46} color="#FFFFFF" strokeWidth={2.2} />
             ) : (
-              <Mic className="w-12 h-12 stroke-[2.2]" />
+              <Mic size={46} color={COLORS.purple} strokeWidth={2.2} />
             )}
-          </button>
-        </div>
+          </TouchableOpacity>
+        </View>
 
-        {/* Interpreted Result Card with float-up animation */}
-        {voiceText && (
-          <div
-            className="w-full rounded-2xl p-4 border shadow-md animate-float-up text-left space-y-3"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+        {/* Interpreted Result */}
+        {voiceText ? (
+          <View
+            style={[
+              styles.resultCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <MessageSquare className="w-4 h-4 text-indigo-500" />
-              <span>O que o SEDA ouviu:</span>
-            </div>
+            <View style={styles.resultHeader}>
+              <MessageSquare size={16} color="#6366F1" />
+              <Text style={[styles.resultHeaderText, { color: dm.sub }]}>
+                O que o SEDA ouviu:
+              </Text>
+            </View>
 
-            <p className="text-sm font-semibold italic text-slate-700 dark:text-slate-200 pl-2 border-l-2 border-indigo-400">
+            <Text style={[styles.voiceText, { color: dm.text }]}>
               "{voiceText}"
-            </p>
+            </Text>
 
-            {/* Recognized Green Badge */}
             {interpretedData && (
-              <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                <div className="text-xs">
-                  <p className="font-bold text-emerald-800 dark:text-emerald-300">
-                    Pressão {interpretedData.systolic}/{interpretedData.diastolic} mmHg interpretada
-                  </p>
+              <View style={styles.interpretedBox}>
+                <CheckCircle2 size={22} color="#16A34A" />
+                <View style={styles.interpretedTextWrapper}>
+                  <Text style={styles.interpretedMain}>
+                    Pressão {interpretedData.systolic}/{interpretedData.diastolic} mmHg
+                  </Text>
                   {interpretedData.glucose && (
-                    <p className="text-emerald-700 dark:text-emerald-400 font-medium">
+                    <Text style={styles.interpretedSub}>
                       Glicemia: {interpretedData.glucose} mg/dL
-                    </p>
+                    </Text>
                   )}
-                </div>
-              </div>
+                </View>
+              </View>
             )}
 
-            {/* Confirm & Save Button */}
-            <button
-              id="btn-confirm-voice-save"
-              type="button"
-              onClick={handleConfirmAndSave}
+            <TouchableOpacity
+              onPress={handleConfirmAndSave}
               disabled={isSaved}
-              className="btn-press w-full py-3.5 rounded-xl font-bold text-white text-sm shadow-md flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition-all"
+              activeOpacity={0.8}
+              style={styles.confirmBtn}
             >
               {isSaved ? (
                 <>
-                  <CheckCircle2 className="w-5 h-5 text-white" />
-                  <span>✓ Salvo no seu histórico!</span>
+                  <CheckCircle2 size={18} color="#FFFFFF" />
+                  <Text style={styles.confirmBtnText}>✓ Salvo no histórico!</Text>
                 </>
               ) : (
                 <>
-                  <span>Confirmar e Salvar</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <Text style={styles.confirmBtnText}>Confirmar e Salvar</Text>
+                  <ArrowRight size={18} color="#FFFFFF" />
                 </>
               )}
-            </button>
-          </div>
-        )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
-        {/* Idle Example Commands */}
+        {/* Example Commands */}
         {!voiceText && !isListening && (
-          <div
-            className="w-full rounded-2xl p-4 border text-left"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
+          <View
+            style={[
+              styles.examplesCard,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Exemplos de frases que você pode falar:</span>
-            </div>
-            <div className="space-y-1.5">
+            <View style={styles.examplesHeader}>
+              <Sparkles size={16} color="#6366F1" />
+              <Text style={[styles.examplesHeaderText, { color: dm.sub }]}>
+                Exemplos de frases:
+              </Text>
+            </View>
+
+            <View style={styles.examplesList}>
               {sampleCommands.map((cmd, idx) => (
-                <p
+                <View
                   key={idx}
-                  className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg"
+                  style={[
+                    styles.exampleItem,
+                    { backgroundColor: dm.inputBg },
+                  ]}
                 >
-                  {cmd}
-                </p>
+                  <Text style={[styles.exampleText, { color: dm.text }]}>
+                    {cmd}
+                  </Text>
+                </View>
               ))}
-            </div>
-          </div>
+            </View>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+    flexGrow: 1,
+  },
+  body: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 16,
+  },
+  statusChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  statusChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  wavesContainer: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  waveBar: {
+    width: 6,
+    borderRadius: 3,
+  },
+  micWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 14,
+  },
+  pulseRing: {
+    position: 'absolute',
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#818CF8',
+  },
+  pulseRing1: {
+    width: 150,
+    height: 150,
+  },
+  pulseRing2: {
+    width: 180,
+    height: 180,
+    opacity: 0.5,
+  },
+  micBtn: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+  },
+  resultCard: {
+    width: '100%',
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  resultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  resultHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  voiceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    paddingLeft: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6366F1',
+  },
+  interpretedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+  },
+  interpretedTextWrapper: {
+    flex: 1,
+  },
+  interpretedMain: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  interpretedSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#16A34A',
+    marginTop: 2,
+  },
+  confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#16A34A',
+  },
+  confirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  examplesCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    gap: 10,
+  },
+  examplesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  examplesHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  examplesList: {
+    gap: 6,
+  },
+  exampleItem: {
+    padding: 10,
+    borderRadius: 10,
+  },
+  exampleText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+});

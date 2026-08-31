@@ -1,5 +1,14 @@
 import React from 'react';
 import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
+import {
   Bell,
   PhoneCall,
   HeartPulse,
@@ -10,11 +19,8 @@ import {
   Calendar,
   ChevronRight,
   TrendingUp,
-  AlertCircle,
-  Plus,
   Stethoscope,
-} from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+} from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { Appointment, DarkModeTheme, HealthRecord, Screen, UserProfile } from '../types';
 import { HealthRing } from '../components/HealthRing';
@@ -44,7 +50,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   dm,
   unreadAlertsCount,
 }) => {
-  // Dynamic greeting based on current hour
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return 'Bom dia';
@@ -52,7 +57,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return 'Boa noite';
   };
 
-  // Status colors calculation
   const getSystolicStatusColor = (val: number) => {
     if (val >= 140) return COLORS.danger;
     if (val >= 130) return COLORS.warn;
@@ -68,7 +72,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const systolicColor = getSystolicStatusColor(pressSys);
   const glucoseColor = getGlucoseStatusColor(glucose);
 
-  // Next active appointment
   const nextAppt = appointments
     .filter((a) => a.status !== 'cancelled' && a.status !== 'completed')
     .sort((a, b) => a.date.localeCompare(b.date))[0];
@@ -85,466 +88,705 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     if (diffDays > 1)
       return {
         label: `Em ${diffDays}d`,
-        bg: 'rgba(94, 143, 192, 0.15)',
+        bg: 'rgba(94, 143, 192, 0.18)',
         text: COLORS.primary,
       };
-    return { label: 'Agendado', bg: 'rgba(47, 191, 113, 0.15)', text: '#16a34a' };
+    return { label: 'Agendado', bg: 'rgba(47, 191, 113, 0.18)', text: '#16a34a' };
   };
 
-  // Mini 7-day chart data formatted from records
-  const chartData = [...records]
-    .slice(0, 7)
-    .reverse()
-    .map((r, i) => ({
-      name: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.'),
-      systolic: r.systolic,
-      diastolic: r.diastolic,
-    }));
+  // SVG Chart points calculation for 7 days
+  const recentRecords = [...records].slice(0, 7).reverse();
+  const chartWidth = 300;
+  const chartHeight = 85;
+  const minVal = 100;
+  const maxVal = 160;
+
+  const points = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 20) + 10;
+    const norm = (r.systolic - minVal) / (maxVal - minVal);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.systolic, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
+  });
+
+  const pathD = points.length > 0
+    ? `M ${points.map((p) => `${p.x},${p.y}`).join(' L ')}`
+    : '';
+
+  const areaD = points.length > 0
+    ? `${pathD} L ${points[points.length - 1].x},${chartHeight} L ${points[0].x},${chartHeight} Z`
+    : '';
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-4 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header Gradient */}
-      <div
-        className="px-5 pt-3 pb-8 text-white relative transition-all"
-        style={{
-          background: 'linear-gradient(160deg, #3D6E9F 0%, #5E8FC0 60%, #7CC9BE 100%)',
-        }}
+      <LinearGradient
+        colors={['#1E3A5F', '#3D6E9F', '#7CC9BE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
       >
-        {/* Top bar with greeting & action buttons */}
-        <div className="flex items-center justify-between gap-2 mb-4">
-          <div>
-            <span className="text-xs font-semibold text-blue-100 uppercase tracking-wider block opacity-90">
-              {getGreeting()},
-            </span>
-            <h1 className="text-xl font-black tracking-tight text-white truncate max-w-[200px]">
+        <View style={styles.topRow}>
+          <View style={styles.greetingWrapper}>
+            <Text style={styles.greetingText}>{getGreeting()},</Text>
+            <Text style={styles.userNameText} numberOfLines={1}>
               {user.name.split(' ')[0]} {user.name.split(' ')[1] || ''}
-            </h1>
-          </div>
+            </Text>
+          </View>
 
-          <div className="flex items-center gap-2">
-            {/* Alerts Bell with pulsating dot */}
-            <button
-              id="btn-home-alerts"
-              type="button"
-              onClick={() => onNavigate('alerts')}
-              className="btn-press relative w-10 h-10 rounded-full flex items-center justify-center border transition-all"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                backdropFilter: 'blur(8px)',
-              }}
-              aria-label="Alertas"
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => onNavigate('alerts')}
+              activeOpacity={0.7}
+              style={styles.alertBtn}
+              accessibilityLabel="Alertas"
             >
-              <Bell className="w-5 h-5 text-white" />
-              {unreadAlertsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
-              )}
-            </button>
+              <Bell size={20} color="#FFFFFF" />
+              {unreadAlertsCount > 0 && <View style={styles.alertDot} />}
+            </TouchableOpacity>
 
-            {/* Emergency Phone Button (red semi-transparent) */}
-            <button
-              id="btn-home-emergency"
-              type="button"
-              onClick={() => onNavigate('emergency')}
-              className="btn-press flex items-center gap-1.5 px-3 py-2 rounded-full border border-red-300/40 text-white font-bold text-xs shadow-lg transition-all animate-pulse-ring-fast"
-              style={{
-                backgroundColor: 'rgba(228, 84, 84, 0.85)',
-                backdropFilter: 'blur(8px)',
-              }}
-              aria-label="Emergência SAMU"
+            <TouchableOpacity
+              onPress={() => onNavigate('emergency')}
+              activeOpacity={0.8}
+              style={styles.emergencyBtn}
+              accessibilityLabel="Emergência SAMU"
             >
-              <PhoneCall className="w-4 h-4 fill-white" />
-              <span>SOS 192</span>
-            </button>
-          </div>
-        </div>
+              <PhoneCall size={15} color="#FFFFFF" fill="#FFFFFF" />
+              <Text style={styles.emergencyBtnText}>SOS 192</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* Vitals Strip in Glassmorphism */}
-        <div
-          className="rounded-2xl p-3.5 flex items-center justify-between text-white shadow-lg"
-          style={{
-            background: 'rgba(255, 255, 255, 0.14)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
-          }}
-        >
-          <div className="flex-1 text-center border-r border-white/20 px-1">
-            <span className="text-[10px] uppercase font-semibold text-blue-100 block">
-              Pressão Atual
-            </span>
-            <span className="text-base font-black tracking-tight">
+        {/* Vitals Glass Strip */}
+        <View style={styles.vitalsStrip}>
+          <View style={[styles.vitalItem, styles.vitalDivider]}>
+            <Text style={styles.vitalLabel}>Pressão</Text>
+            <Text style={styles.vitalValue}>
               {pressSys}/{pressDia}
-            </span>
-            <span className="text-[9px] text-white/80 block">mmHg</span>
-          </div>
+            </Text>
+            <Text style={styles.vitalUnit}>mmHg</Text>
+          </View>
 
-          <div className="flex-1 text-center border-r border-white/20 px-1">
-            <span className="text-[10px] uppercase font-semibold text-blue-100 block">
-              Glicemia
-            </span>
-            <span className="text-base font-black tracking-tight">{glucose}</span>
-            <span className="text-[9px] text-white/80 block">mg/dL</span>
-          </div>
+          <View style={[styles.vitalItem, styles.vitalDivider]}>
+            <Text style={styles.vitalLabel}>Glicemia</Text>
+            <Text style={styles.vitalValue}>{glucose}</Text>
+            <Text style={styles.vitalUnit}>mg/dL</Text>
+          </View>
 
-          <div className="flex-1 text-center px-1">
-            <span className="text-[10px] uppercase font-semibold text-blue-100 block">
-              Remédios Hoje
-            </span>
-            <span className="text-base font-black tracking-tight text-emerald-200">
-              3 de 3
-            </span>
-            <span className="text-[9px] text-white/80 block">100% em dia</span>
-          </div>
-        </div>
-      </div>
+          <View style={styles.vitalItem}>
+            <Text style={styles.vitalLabel}>Remédios</Text>
+            <Text style={[styles.vitalValue, { color: '#86EFAC' }]}>3 de 3</Text>
+            <Text style={styles.vitalUnit}>100% em dia</Text>
+          </View>
+        </View>
+      </LinearGradient>
 
-      {/* Main Body Content with Overlap */}
-      <div className="px-4 -mt-5 space-y-4 z-10">
-        {/* 3 Health Rings Card */}
-        <div
-          className="rounded-2xl p-4 shadow-sm border transition-all"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-            boxShadow: '0 2px 12px rgba(94,143,192,0.07)',
-          }}
+      {/* Main Body */}
+      <View style={styles.body}>
+        {/* Rings Section */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.sectionTitle, { color: dm.sub }]}>
               Medições em Tempo Real
-            </h2>
-            <button
-              id="btn-goto-history-top"
-              type="button"
-              onClick={() => onNavigate('history')}
-              className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 flex items-center hover:underline"
+            </Text>
+            <TouchableOpacity
+              onPress={() => onNavigate('history')}
+              style={styles.linkRow}
             >
-              Histórico <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
+              <Text style={[styles.linkText, { color: COLORS.primary }]}>
+                Histórico
+              </Text>
+              <ChevronRight size={14} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
 
-          <div className="flex items-center justify-around py-1">
-            {/* Systolic Ring */}
-            <div
-              className="flex flex-col items-center cursor-pointer btn-press"
-              onClick={() => onNavigate('pressure')}
+          <View style={styles.ringsRow}>
+            <TouchableOpacity
+              onPress={() => onNavigate('pressure')}
+              activeOpacity={0.7}
+              style={styles.ringItem}
             >
               <HealthRing
                 value={pressSys}
                 max={200}
                 color={systolicColor}
-                size={84}
+                size={82}
                 stroke={7}
                 unit="mmHg"
                 label="Sistólica"
               />
-              <span className="text-[11px] font-bold mt-1" style={{ color: dm.text }}>
-                Pressão
-              </span>
-            </div>
+              <Text style={[styles.ringTitle, { color: dm.text }]}>Pressão</Text>
+            </TouchableOpacity>
 
-            {/* Glucose Ring */}
-            <div
-              className="flex flex-col items-center cursor-pointer btn-press"
-              onClick={() => onNavigate('glucose')}
+            <TouchableOpacity
+              onPress={() => onNavigate('glucose')}
+              activeOpacity={0.7}
+              style={styles.ringItem}
             >
               <HealthRing
                 value={glucose}
                 max={250}
                 color={glucoseColor}
-                size={84}
+                size={82}
                 stroke={7}
                 unit="mg/dL"
                 label="Glicose"
               />
-              <span className="text-[11px] font-bold mt-1" style={{ color: dm.text }}>
-                Glicemia
-              </span>
-            </div>
+              <Text style={[styles.ringTitle, { color: dm.text }]}>Glicemia</Text>
+            </TouchableOpacity>
 
-            {/* Heart Rate Ring */}
-            <div
-              className="flex flex-col items-center cursor-pointer btn-press"
-              onClick={() => onNavigate('pressure')}
+            <TouchableOpacity
+              onPress={() => onNavigate('pressure')}
+              activeOpacity={0.7}
+              style={styles.ringItem}
             >
               <HealthRing
                 value={heartRate}
                 max={150}
                 color={COLORS.secondary}
-                size={84}
+                size={82}
                 stroke={7}
                 unit="bpm"
                 label="Pulso"
               />
-              <span className="text-[11px] font-bold mt-1" style={{ color: dm.text }}>
-                Batimentos
-              </span>
-            </div>
-          </div>
-        </div>
+              <Text style={[styles.ringTitle, { color: dm.text }]}>Batimentos</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* 3x2 Quick Actions Grid */}
-        <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: dm.sub }}>
+        {/* Quick Actions Grid */}
+        <View>
+          <Text style={[styles.sectionTitle, styles.gridTitle, { color: dm.sub }]}>
             Ações Rápidas
-          </h2>
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* 1. Pressão */}
-            <button
-              id="btn-quick-pressure"
-              type="button"
-              onClick={() => onNavigate('pressure')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.danger}18` }}
-              >
-                <HeartPulse className="w-5 h-5" style={{ color: COLORS.danger }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Pressão
-              </span>
-              <span className="text-[10px] text-slate-400">Aferir agora</span>
-            </button>
+          </Text>
 
-            {/* 2. Glicemia */}
-            <button
-              id="btn-quick-glucose"
-              type="button"
-              onClick={() => onNavigate('glucose')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+          <View style={styles.grid}>
+            {/* Pressão */}
+            <TouchableOpacity
+              onPress={() => onNavigate('pressure')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.accent}18` }}
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.danger}18` },
+                ]}
               >
-                <Droplets className="w-5 h-5" style={{ color: COLORS.accent }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Glicemia
-              </span>
-              <span className="text-[10px] text-slate-400">Registrar</span>
-            </button>
+                <HeartPulse size={22} color={COLORS.danger} strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Pressão</Text>
+              <Text style={styles.gridCardSub}>Aferir agora</Text>
+            </TouchableOpacity>
 
-            {/* 3. Por Voz */}
-            <button
-              id="btn-quick-voice"
-              type="button"
-              onClick={() => onNavigate('voice')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            {/* Glicemia */}
+            <TouchableOpacity
+              onPress={() => onNavigate('glucose')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.purple}18` }}
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.accent}18` },
+                ]}
               >
-                <Mic className="w-5 h-5" style={{ color: COLORS.purple }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Por Voz
-              </span>
-              <span className="text-[10px] text-slate-400">Falar dados</span>
-            </button>
+                <Droplets size={22} color={COLORS.accent} strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Glicemia</Text>
+              <Text style={styles.gridCardSub}>Registrar</Text>
+            </TouchableOpacity>
 
-            {/* 4. Dashboard */}
-            <button
-              id="btn-quick-dashboard"
-              type="button"
-              onClick={() => onNavigate('dashboard')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            {/* Por Voz */}
+            <TouchableOpacity
+              onPress={() => onNavigate('voice')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.primary}18` }}
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.purple}18` },
+                ]}
               >
-                <BarChart3 className="w-5 h-5" style={{ color: COLORS.primary }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Gráficos
-              </span>
-              <span className="text-[10px] text-slate-400">Tendências</span>
-            </button>
+                <Mic size={22} color={COLORS.purple} strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Por Voz</Text>
+              <Text style={styles.gridCardSub}>Falar dados</Text>
+            </TouchableOpacity>
 
-            {/* 5. Família */}
-            <button
-              id="btn-quick-family"
-              type="button"
-              onClick={() => onNavigate('family')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            {/* Gráficos */}
+            <TouchableOpacity
+              onPress={() => onNavigate('dashboard')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.secondary}25` }}
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.primary}18` },
+                ]}
               >
-                <Users className="w-5 h-5" style={{ color: '#0f766e' }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Cuidadores
-              </span>
-              <span className="text-[10px] text-slate-400">Rede SUS</span>
-            </button>
+                <BarChart3 size={22} color={COLORS.primary} strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Gráficos</Text>
+              <Text style={styles.gridCardSub}>Tendências</Text>
+            </TouchableOpacity>
 
-            {/* 6. Consultas */}
-            <button
-              id="btn-quick-appointments"
-              type="button"
-              onClick={() => onNavigate('appointments')}
-              className="btn-press card-hover flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            {/* Cuidadores */}
+            <TouchableOpacity
+              onPress={() => onNavigate('family')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5"
-                style={{ backgroundColor: `${COLORS.warn}20` }}
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.secondary}25` },
+                ]}
               >
-                <Calendar className="w-5 h-5" style={{ color: '#b45309' }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: dm.text }}>
-                Consultas
-              </span>
-              <span className="text-[10px] text-slate-400">Agendar</span>
-            </button>
-          </div>
-        </div>
+                <Users size={22} color="#0F766E" strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Cuidadores</Text>
+              <Text style={styles.gridCardSub}>Rede SUS</Text>
+            </TouchableOpacity>
 
-        {/* Next Appointment Card */}
+            {/* Consultas */}
+            <TouchableOpacity
+              onPress={() => onNavigate('appointments')}
+              activeOpacity={0.7}
+              style={[
+                styles.gridCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.gridIconBox,
+                  { backgroundColor: `${COLORS.warn}20` },
+                ]}
+              >
+                <Calendar size={22} color="#B45309" strokeWidth={2.4} />
+              </View>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Consultas</Text>
+              <Text style={styles.gridCardSub}>Agendar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Next Appointment */}
         {nextAppt && (
-          <div
-            className="rounded-2xl p-4 border shadow-xs transition-all card-hover cursor-pointer"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-            }}
-            onClick={() => onNavigate('appointments')}
+          <TouchableOpacity
+            onPress={() => onNavigate('appointments')}
+            activeOpacity={0.8}
+            style={[
+              styles.card,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: `${COLORS.primary}18`, color: COLORS.primary }}
+            <View style={styles.cardHeader}>
+              <View style={styles.apptHeaderLeft}>
+                <View
+                  style={[
+                    styles.apptIconBox,
+                    { backgroundColor: `${COLORS.primary}18` },
+                  ]}
                 >
-                  <Stethoscope className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
-                    Próxima Consulta SUS
-                  </h3>
-                </div>
-              </div>
+                  <Stethoscope size={18} color={COLORS.primary} />
+                </View>
+                <Text style={[styles.sectionTitle, { color: dm.sub }]}>
+                  Próxima Consulta SUS
+                </Text>
+              </View>
               {(() => {
                 const daysBadge = getApptDaysText(nextAppt.date);
                 return (
-                  <span
-                    className="px-2.5 py-0.5 rounded-full text-xs font-bold"
-                    style={{ backgroundColor: daysBadge.bg, color: daysBadge.text }}
+                  <View
+                    style={[
+                      styles.daysBadge,
+                      { backgroundColor: daysBadge.bg },
+                    ]}
                   >
-                    {daysBadge.label}
-                  </span>
+                    <Text
+                      style={[styles.daysBadgeText, { color: daysBadge.text }]}
+                    >
+                      {daysBadge.label}
+                    </Text>
+                  </View>
                 );
               })()}
-            </div>
+            </View>
 
-            <div className="mt-2">
-              <p className="text-sm font-black" style={{ color: dm.text }}>
+            <View style={styles.apptBody}>
+              <Text style={[styles.doctorName, { color: dm.text }]}>
                 {nextAppt.doctor}
-              </p>
-              <p className="text-xs font-semibold text-slate-500">
+              </Text>
+              <Text style={[styles.doctorSpecialty, { color: dm.sub }]}>
                 {nextAppt.specialty} • {nextAppt.time}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1 truncate">
+              </Text>
+              <Text style={styles.doctorLocation} numberOfLines={1}>
                 📍 {nextAppt.location || 'Teleconsulta Conecte SUS'}
-              </p>
-            </div>
-          </div>
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
 
-        {/* 7-Day Mini Systolic Trend AreaChart */}
-        <div
-          className="rounded-2xl p-4 border shadow-xs transition-all"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* 7-Day Trend Chart */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: dm.sub }]}>
                 Evolução da Pressão (7 dias)
-              </h3>
-              <p className="text-[11px] text-slate-400">Média Sistólica: 127 mmHg</p>
-            </div>
-            <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-              <TrendingUp className="w-3.5 h-3.5" /> -4 mmHg
-            </span>
-          </div>
+              </Text>
+              <Text style={styles.chartSub}>Média Sistólica: 127 mmHg</Text>
+            </View>
+            <View style={styles.trendBadge}>
+              <TrendingUp size={14} color="#16A34A" />
+              <Text style={styles.trendText}>-4 mmHg</Text>
+            </View>
+          </View>
 
-          <div className="h-28 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="sysGradientHome" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="name"
-                  stroke={dm.sub}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  domain={[100, 160]}
-                  stroke={dm.sub}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: dm.card,
-                    borderColor: dm.border,
-                    borderRadius: 12,
-                    fontSize: 11,
-                    color: dm.text,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="systolic"
+          <View style={styles.chartContainer}>
+            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              <Defs>
+                <SvgLinearGradient id="sysGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={COLORS.primary} stopOpacity={0.4} />
+                  <Stop offset="100%" stopColor={COLORS.primary} stopOpacity={0.0} />
+                </SvgLinearGradient>
+              </Defs>
+
+              {areaD ? <Path d={areaD} fill="url(#sysGradient)" /> : null}
+              {pathD ? (
+                <Path
+                  d={pathD}
+                  fill="none"
                   stroke={COLORS.primary}
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#sysGradientHome)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-    </div>
+              ) : null}
+
+              {points.map((p, idx) => (
+                <SvgCircle
+                  key={idx}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  fill="#FFFFFF"
+                  stroke={COLORS.primary}
+                  strokeWidth="2.5"
+                />
+              ))}
+            </Svg>
+
+            {/* X-axis labels */}
+            <View style={styles.xAxisRow}>
+              {points.map((p, idx) => (
+                <Text key={idx} style={[styles.xAxisLabel, { color: dm.sub }]}>
+                  {p.date}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  greetingWrapper: {
+    flex: 1,
+  },
+  greetingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textTransform: 'uppercase',
+  },
+  userNameText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  alertDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  emergencyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: '#E45454',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  emergencyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  vitalsStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  vitalItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  vitalDivider: {
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  vitalLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textTransform: 'uppercase',
+  },
+  vitalValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 1,
+  },
+  vitalUnit: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
+  body: {
+    paddingHorizontal: 16,
+    marginTop: -16,
+    gap: 14,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  gridTitle: {
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  linkText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  ringsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 4,
+  },
+  ringItem: {
+    alignItems: 'center',
+  },
+  ringTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  gridCard: {
+    width: '31%',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    elevation: 1,
+  },
+  gridIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  gridCardTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  gridCardSub: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  apptHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  apptIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  daysBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  daysBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  apptBody: {
+    marginTop: 4,
+  },
+  doctorName: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  doctorSpecialty: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  doctorLocation: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  chartSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  chartContainer: {
+    marginTop: 8,
+  },
+  xAxisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+  xAxisLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+});

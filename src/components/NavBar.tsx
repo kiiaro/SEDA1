@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, History, Bell, Users, User } from 'lucide-react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Home, History, Bell, Users, User } from 'lucide-react-native';
 import { DarkModeTheme, Screen } from '../types';
 import { COLORS } from '../constants/theme';
 
@@ -25,70 +26,116 @@ export const NavBar: React.FC<NavBarProps> = ({
   ];
 
   return (
-    <nav
-      className="sticky bottom-0 left-0 right-0 w-full border-t z-30 transition-colors duration-200"
-      style={{
-        backgroundColor: dm.card,
-        borderColor: dm.border,
-        boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.06)',
-      }}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: dm.card,
+          borderTopColor: dm.border,
+        },
+      ]}
     >
-      <div className="flex items-center justify-around px-2 py-1.5 min-h-[58px]">
+      <View style={styles.tabRow}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
 
           return (
-            <button
-              id={`nav-tab-${tab.id}`}
+            <TouchableOpacity
               key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id as Screen)}
-              className="btn-press flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl relative transition-all duration-200 min-h-[46px]"
-              style={{
-                backgroundColor: isActive ? `${COLORS.primary}18` : 'transparent',
-                color: isActive ? COLORS.primary : dm.sub,
-              }}
-              aria-label={tab.label}
+              onPress={() => onTabChange(tab.id as Screen)}
+              activeOpacity={0.7}
+              style={[
+                styles.tabButton,
+                {
+                  backgroundColor: isActive ? `${COLORS.primary}18` : 'transparent',
+                },
+              ]}
+              accessibilityLabel={tab.label}
             >
-              <div className="relative">
+              <View style={styles.iconWrapper}>
                 <Icon
-                  className="w-5 h-5 transition-transform"
-                  style={{
-                    strokeWidth: isActive ? 2.5 : 2,
-                    transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                  }}
+                  size={21}
+                  color={isActive ? COLORS.primary : dm.sub}
+                  strokeWidth={isActive ? 2.5 : 2}
                 />
                 {tab.badge && tab.badge > 0 && !isActive && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
+                  <View style={styles.badgeDot} />
                 )}
-              </div>
+              </View>
 
-              <span
-                className="text-[11px] font-medium tracking-tight mt-0.5 whitespace-nowrap"
-                style={{
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? COLORS.primary : dm.sub,
-                }}
+              <Text
+                style={[
+                  styles.tabLabel,
+                  {
+                    color: isActive ? COLORS.primary : dm.sub,
+                    fontWeight: isActive ? '800' : '500',
+                  },
+                ]}
               >
                 {tab.label}
-              </span>
+              </Text>
 
-              {/* Active 16x3px bottom pill indicator */}
-              {isActive && (
-                <div
-                  className="mt-0.5 rounded-full"
-                  style={{
-                    width: 16,
-                    height: 3,
-                    backgroundColor: COLORS.primary,
-                  }}
-                />
-              )}
-            </button>
+              {isActive && <View style={styles.activePill} />}
+            </TouchableOpacity>
           );
         })}
-      </div>
-    </nav>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    borderTopWidth: 1,
+    paddingBottom: 8,
+    paddingTop: 4,
+    paddingHorizontal: 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    minHeight: 52,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 2,
+    borderRadius: 14,
+    minHeight: 46,
+  },
+  iconWrapper: {
+    position: 'relative',
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: -2,
+    right: -3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  tabLabel: {
+    fontSize: 10,
+    marginTop: 2,
+    letterSpacing: -0.2,
+  },
+  activePill: {
+    width: 14,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginTop: 2,
+  },
+});

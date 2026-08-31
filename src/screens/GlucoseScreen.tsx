@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
-import { Droplets, Utensils, Clock, CheckCircle2, AlertTriangle, ArrowDown, ArrowUp } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
+import { Utensils, Clock, CheckCircle2 } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
@@ -30,7 +38,6 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   const [timeStr, setTimeStr] = useState('07:45');
   const [isSaved, setIsSaved] = useState(false);
 
-  // Status calculation
   const getGlucoseStatus = (val: number) => {
     if (val > 126) {
       return {
@@ -72,47 +79,64 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
     }, 2200);
   };
 
-  // 7-day glucose chart data
-  const chartData = [...records]
-    .slice(0, 7)
-    .reverse()
-    .map((r) => ({
-      name: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.'),
-      glucose: r.glucose,
-    }));
+  // SVG Chart calculation for 7 days
+  const recentRecords = [...records].slice(0, 7).reverse();
+  const chartWidth = 300;
+  const chartHeight = 100;
+  const minVal = 60;
+  const maxVal = 200;
+
+  const points = recentRecords.map((r, i) => {
+    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+    const norm = (r.glucose - minVal) / (maxVal - minVal);
+    const y = chartHeight - norm * (chartHeight - 20) - 10;
+    return { x, y, val: r.glucose, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
+  });
+
+  const pathD = points.length > 0
+    ? `M ${points.map((p) => `${p.x},${p.y}`).join(' L ')}`
+    : '';
+
+  const areaD = points.length > 0
+    ? `${pathD} L ${points[points.length - 1].x},${chartHeight} L ${points[0].x},${chartHeight} Z`
+    : '';
 
   return (
-    <div className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: dm.bg }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <BackHeader
         title="Glicemia Capilar"
         subtitle="Monitoramento de glicose e refeições"
         onBack={onBack}
-        bgGradient="linear-gradient(160deg, #2D6A4F 0%, #59B98A 100%)"
+        bgGradient={['#2D6A4F', '#59B98A']}
       />
 
-      <div className="p-4 space-y-4">
-        {/* Large Health Ring at Top (size 130, stroke 12) */}
-        <div
-          className="rounded-3xl p-5 border shadow-xs flex flex-col items-center justify-center text-center"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+      <View style={styles.content}>
+        {/* Large Health Ring at Top */}
+        <View
+          style={[
+            styles.card,
+            styles.ringCard,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="my-2">
+          <View style={styles.ringWrapper}>
             <HealthRing
               value={glucose}
               max={300}
               color={status.color}
-              size={130}
-              stroke={12}
+              size={120}
+              stroke={11}
               unit="mg/dL"
               label="Glicose"
             />
-          </div>
+          </View>
 
           {/* Stepper with Dynamic Color Matching Ring */}
-          <div className="w-full mt-2">
+          <View style={styles.stepperWrapper}>
             <Stepper
               value={glucose}
               onValueChange={setGlucose}
@@ -123,163 +147,315 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
               color={status.color}
               fontSizeScale={fontSizeScale}
             />
-          </div>
+          </View>
 
-          {/* Textual Status Badge */}
-          <div
-            className="mt-3 px-4 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5"
-            style={{
-              backgroundColor: `${status.color}20`,
-              color: status.color,
-            }}
+          {/* Status Badge */}
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${status.color}20` },
+            ]}
           >
-            <span>{status.label}</span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-[280px] leading-snug">
+            <Text style={[styles.statusBadgeText, { color: status.color }]}>
+              {status.label}
+            </Text>
+          </View>
+          <Text style={[styles.statusDesc, { color: dm.sub }]}>
             {status.desc}
-          </p>
-        </div>
+          </Text>
+        </View>
 
-        {/* Meal Context Toggle & Native Time Input */}
-        <div
-          className="rounded-2xl p-4 border shadow-xs space-y-3"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* Meal Context Toggle & Time */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Contexto da Medição
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                id="btn-meal-before"
-                type="button"
-                onClick={() => setMealContext('before')}
-                className="btn-press py-3 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: mealContext === 'before' ? `${COLORS.warn}25` : dm.bg,
+          <Text style={[styles.label, { color: dm.sub }]}>
+            Contexto da Medição
+          </Text>
+          <View style={styles.mealRow}>
+            <TouchableOpacity
+              onPress={() => setMealContext('before')}
+              activeOpacity={0.7}
+              style={[
+                styles.mealBtn,
+                {
+                  backgroundColor: mealContext === 'before' ? `${COLORS.warn}25` : dm.inputBg,
                   borderColor: mealContext === 'before' ? COLORS.warn : dm.border,
-                  color: mealContext === 'before' ? '#b45309' : dm.sub,
-                }}
+                },
+              ]}
+            >
+              <Utensils size={16} color={mealContext === 'before' ? '#B45309' : dm.sub} />
+              <Text
+                style={[
+                  styles.mealBtnText,
+                  { color: mealContext === 'before' ? '#B45309' : dm.sub },
+                ]}
               >
-                <Utensils className="w-4 h-4" />
-                <span>Antes da Refeição (Jejum)</span>
-              </button>
+                Antes (Jejum)
+              </Text>
+            </TouchableOpacity>
 
-              <button
-                id="btn-meal-after"
-                type="button"
-                onClick={() => setMealContext('after')}
-                className="btn-press py-3 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: mealContext === 'after' ? `${COLORS.warn}25` : dm.bg,
+            <TouchableOpacity
+              onPress={() => setMealContext('after')}
+              activeOpacity={0.7}
+              style={[
+                styles.mealBtn,
+                {
+                  backgroundColor: mealContext === 'after' ? `${COLORS.warn}25` : dm.inputBg,
                   borderColor: mealContext === 'after' ? COLORS.warn : dm.border,
-                  color: mealContext === 'after' ? '#b45309' : dm.sub,
-                }}
+                },
+              ]}
+            >
+              <Utensils size={16} color={mealContext === 'after' ? '#B45309' : dm.sub} />
+              <Text
+                style={[
+                  styles.mealBtnText,
+                  { color: mealContext === 'after' ? '#B45309' : dm.sub },
+                ]}
               >
-                <Utensils className="w-4 h-4" />
-                <span>Pós-Prandial (2h após)</span>
-              </button>
-            </div>
-          </div>
+                Pós-Prandial (2h)
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+          <View style={styles.timeSection}>
+            <Text style={[styles.label, { color: dm.sub }]}>
               Horário da Aferição
-            </label>
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-slate-400" />
-              <input
-                id="input-glucose-time"
-                type="time"
+            </Text>
+            <View style={styles.timeInputWrapper}>
+              <Clock size={18} color={dm.sub} />
+              <TextInput
                 value={timeStr}
-                onChange={(e) => setTimeStr(e.target.value)}
-                className="px-4 py-2.5 rounded-xl border text-sm font-bold tracking-wider outline-hidden"
-                style={{
-                  backgroundColor: dm.bg,
-                  borderColor: dm.border,
-                  color: dm.text,
-                }}
+                onChangeText={setTimeStr}
+                style={[
+                  styles.timeInput,
+                  {
+                    backgroundColor: dm.inputBg,
+                    borderColor: dm.border,
+                    color: dm.text,
+                  },
+                ]}
               />
-            </div>
-          </div>
-        </div>
+            </View>
+          </View>
+        </View>
 
-        {/* Save Button with State Transition */}
-        <button
-          id="btn-save-glucose"
-          type="button"
-          onClick={handleSave}
+        {/* Save Button */}
+        <TouchableOpacity
+          onPress={handleSave}
           disabled={isSaved}
-          className="btn-press w-full py-4 rounded-2xl font-bold text-white text-base shadow-lg flex items-center justify-center gap-2 transition-all duration-300"
-          style={{
-            background: isSaved
-              ? 'linear-gradient(135deg, #2FBF71 0%, #10B981 100%)'
-              : `linear-gradient(135deg, ${status.color} 0%, #3D6E9F 100%)`,
-            boxShadow: `0 8px 24px ${status.color}40`,
-          }}
+          activeOpacity={0.8}
+          style={[
+            styles.saveBtn,
+            { backgroundColor: isSaved ? COLORS.success : status.color },
+          ]}
         >
           {isSaved ? (
             <>
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span>✓ Salvo com sucesso!</span>
+              <CheckCircle2 size={20} color="#FFFFFF" />
+              <Text style={styles.saveBtnText}>✓ Salvo com sucesso!</Text>
             </>
           ) : (
-            <span>Salvar Registro de Glicose</span>
+            <Text style={styles.saveBtnText}>Salvar Registro de Glicose</Text>
           )}
-        </button>
+        </TouchableOpacity>
 
-        {/* AreaChart with Yellow Gradient (warn) */}
-        <div
-          className="rounded-2xl p-4 border shadow-xs"
-          style={{
-            backgroundColor: dm.card,
-            borderColor: dm.border,
-          }}
+        {/* 7-Day Chart */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: dm.card, borderColor: dm.border },
+          ]}
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: dm.sub }}>
-              Curva Glicêmica dos Últimos 7 Dias
-            </h3>
-            <span className="text-xs font-bold text-amber-600">Meta: &lt; 126 mg/dL</span>
-          </div>
+          <View style={styles.chartHeader}>
+            <Text style={[styles.chartTitle, { color: dm.sub }]}>
+              Curva Glicêmica (7 Dias)
+            </Text>
+            <Text style={styles.chartTarget}>Meta: &lt; 126 mg/dL</Text>
+          </View>
 
-          <div className="h-40 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="glucWarnGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.warn} stopOpacity={0.45} />
-                    <stop offset="95%" stopColor={COLORS.warn} stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={dm.isDark ? '#334155' : '#E2E8F0'} />
-                <XAxis dataKey="name" stroke={dm.sub} fontSize={10} tickLine={false} />
-                <YAxis domain={[60, 200]} stroke={dm.sub} fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: dm.card,
-                    borderColor: dm.border,
-                    borderRadius: 12,
-                    fontSize: 11,
-                    color: dm.text,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="glucose"
+          <View style={styles.chartArea}>
+            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              <Defs>
+                <SvgLinearGradient id="glucGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={COLORS.warn} stopOpacity={0.45} />
+                  <Stop offset="100%" stopColor={COLORS.warn} stopOpacity={0.0} />
+                </SvgLinearGradient>
+              </Defs>
+
+              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
+              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
+
+              {areaD ? <Path d={areaD} fill="url(#glucGradient)" /> : null}
+              {pathD ? (
+                <Path
+                  d={pathD}
+                  fill="none"
                   stroke={COLORS.warn}
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#glucWarnGradient)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
                 />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-    </div>
+              ) : null}
+
+              {points.map((p, idx) => (
+                <SvgCircle
+                  key={idx}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4"
+                  fill="#FFFFFF"
+                  stroke={COLORS.warn}
+                  strokeWidth="2.5"
+                />
+              ))}
+            </Svg>
+
+            <View style={styles.xAxisRow}>
+              {points.map((p, idx) => (
+                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>
+                  {p.date}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  content: {
+    padding: 16,
+    gap: 14,
+  },
+  card: {
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  ringCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  ringWrapper: {
+    marginVertical: 4,
+  },
+  stepperWrapper: {
+    width: '100%',
+    marginTop: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginTop: 8,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  statusDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+    maxWidth: 270,
+    lineHeight: 16,
+    marginTop: 6,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  mealRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  mealBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  mealBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  timeSection: {
+    marginTop: 4,
+  },
+  timeInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 18,
+    elevation: 4,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  chartTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  chartTarget: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  chartArea: {
+    marginTop: 4,
+  },
+  xAxisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  xAxisText: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+});

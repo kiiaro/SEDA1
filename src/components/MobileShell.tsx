@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, BatteryMedium, Signal, Smartphone, Maximize2, Minimize2, QrCode, X } from 'lucide-react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Modal,
+  Platform,
+  Dimensions,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Wifi, BatteryMedium, Signal, Smartphone, Maximize2, QrCode, X } from 'lucide-react-native';
 import { DarkModeTheme } from '../types';
 import { COLORS } from '../constants/theme';
 
@@ -31,185 +42,427 @@ export const MobileShell: React.FC<MobileShellProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-start sm:justify-center p-0 sm:p-4 md:p-6 transition-colors duration-300"
-      style={{
-        background: dm.isDark
-          ? 'radial-gradient(ellipse at top, #1E293B 0%, #0F172A 100%)'
-          : 'radial-gradient(ellipse at top, #E2E8F0 0%, #CBD5E1 100%)',
-      }}
-    >
-      {/* Top Toolbar for AI Studio preview / Expo Go simulation instructions */}
-      <div className="w-full max-w-[440px] flex items-center justify-between px-3 py-2 text-xs font-semibold select-none text-slate-700 dark:text-slate-200">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping opacity-75" />
-          <span className="font-bold tracking-tight">SEDA Mobile</span>
-          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono uppercase bg-sky-500/10 text-sky-700 dark:text-sky-300">
-            Expo Go Ready
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            id="btn-expo-instructions"
-            type="button"
-            onClick={() => setShowExpoModal(true)}
-            className="btn-press flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 shadow-xs border border-slate-300/60 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all text-[11px]"
-            title="Como rodar no Expo Go / Celular"
-          >
-            <QrCode className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-            <span>Expo Go</span>
-          </button>
-
-          <button
-            id="btn-toggle-frame-mode"
-            type="button"
-            onClick={onToggleSimulator}
-            className="btn-press flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 shadow-xs border border-slate-300/60 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all text-[11px]"
-            title={isSimulatorMode ? 'Expandir para tela cheia' : 'Modo moldura de celular'}
-          >
-            {isSimulatorMode ? (
-              <>
-                <Maximize2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-                <span className="hidden sm:inline">Tela Cheia</span>
-              </>
-            ) : (
-              <>
-                <Smartphone className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-                <span className="hidden sm:inline">Moldura</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Container */}
-      <div
-        id="seda-app-viewport"
-        className={`relative flex flex-col overflow-hidden transition-all duration-300 ${
-          isSimulatorMode
-            ? 'w-full sm:w-[390px] h-[100dvh] sm:h-[844px] sm:rounded-[44px]'
-            : 'w-full max-w-[520px] min-h-[100dvh] sm:rounded-[32px]'
-        }`}
-        style={{
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
           backgroundColor: dm.bg,
-          boxShadow: isSimulatorMode
-            ? '0 32px 80px rgba(0,0,0,0.35), 0 0 0 10px #1E3A5F, 0 0 0 12px #4A6080'
-            : '0 20px 50px rgba(0,0,0,0.15)',
-        }}
+        },
+      ]}
+    >
+      <StatusBar style={dm.isDark ? 'light' : 'dark'} />
+
+      {/* Outer wrapper for web preview simulation or direct mobile view */}
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: dm.bg,
+          },
+        ]}
       >
-        {/* Mobile Status Bar (44px) */}
-        <div
-          className="sticky top-0 left-0 right-0 z-40 h-[44px] px-6 flex items-center justify-between select-none pointer-events-none transition-colors duration-200"
-          style={{
-            backgroundColor: 'transparent',
-            color: dm.isDark ? '#F1F5F9' : '#1E3A5F',
-          }}
+        {/* Web Toolbar if running on web preview */}
+        {isWeb && (
+          <View style={styles.webToolbar}>
+            <View style={styles.toolbarLeft}>
+              <View style={styles.liveDot} />
+              <Text style={[styles.toolbarTitle, { color: dm.text }]}>SEDA Mobile</Text>
+              <View style={styles.expoBadge}>
+                <Text style={styles.expoBadgeText}>Expo Go Ready</Text>
+              </View>
+            </View>
+
+            <View style={styles.toolbarRight}>
+              <TouchableOpacity
+                onPress={() => setShowExpoModal(true)}
+                style={styles.toolbarButton}
+                activeOpacity={0.7}
+              >
+                <QrCode size={14} color={COLORS.primary} />
+                <Text style={[styles.toolbarButtonText, { color: dm.text }]}>Expo Go</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={onToggleSimulator}
+                style={styles.toolbarButton}
+                activeOpacity={0.7}
+              >
+                {isSimulatorMode ? (
+                  <>
+                    <Maximize2 size={14} color={dm.sub} />
+                    <Text style={[styles.toolbarButtonText, { color: dm.text }]}>Tela Cheia</Text>
+                  </>
+                ) : (
+                  <>
+                    <Smartphone size={14} color={dm.sub} />
+                    <Text style={[styles.toolbarButtonText, { color: dm.text }]}>Moldura</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Viewport Frame */}
+        <View
+          style={[
+            styles.viewport,
+            isWeb && isSimulatorMode ? styles.viewportSimulated : styles.viewportFull,
+            {
+              backgroundColor: dm.bg,
+              borderColor: dm.border,
+            },
+          ]}
         >
-          {/* Time */}
-          <div className="font-semibold text-[14px] tracking-tight pl-1">
-            {timeStr}
-          </div>
+          {/* Virtual Status Bar */}
+          <View style={styles.virtualStatusBar}>
+            <Text style={[styles.virtualTimeText, { color: dm.text }]}>{timeStr}</Text>
 
-          {/* Dynamic Island / Notch Simulation */}
-          <div className="w-[110px] h-[26px] bg-slate-950 rounded-full flex items-center justify-between px-2.5 shadow-inner">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-950 border border-blue-800" />
-            </div>
-          </div>
+            {/* Dynamic Island / Notch */}
+            <View style={styles.dynamicIsland}>
+              <View style={styles.islandCamera} />
+              <View style={styles.islandIndicatorRow}>
+                <View style={styles.islandGreenDot} />
+                <View style={styles.islandSensor} />
+              </View>
+            </View>
 
-          {/* Status Icons */}
-          <div className="flex items-center gap-1.5 pr-1">
-            <Signal className="w-3.5 h-3.5" />
-            <Wifi className="w-3.5 h-3.5" />
-            <BatteryMedium className="w-4 h-4" />
-          </div>
-        </div>
+            <View style={styles.virtualIcons}>
+              <Signal size={13} color={dm.sub} />
+              <Wifi size={13} color={dm.sub} />
+              <BatteryMedium size={14} color={dm.sub} />
+            </View>
+          </View>
 
-        {/* Dynamic App Content Body */}
-        <div className="flex-1 flex flex-col overflow-y-auto relative">
-          {children}
-        </div>
+          {/* Children View */}
+          <View style={styles.content}>{children}</View>
 
-        {/* iOS Home Indicator Bar */}
-        <div
-          className="w-full flex justify-center py-1.5 pointer-events-none select-none z-30"
-          style={{ backgroundColor: dm.card }}
-        >
-          <div
-            className="w-[134px] h-[4.5px] rounded-full transition-colors duration-200"
-            style={{
-              backgroundColor: dm.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(30,58,95,0.35)',
-            }}
-          />
-        </div>
-      </div>
+          {/* Home indicator bar */}
+          <View style={[styles.homeIndicatorWrapper, { backgroundColor: dm.card }]}>
+            <View
+              style={[
+                styles.homeIndicator,
+                {
+                  backgroundColor: dm.isDark
+                    ? 'rgba(255,255,255,0.3)'
+                    : 'rgba(30,58,95,0.35)',
+                },
+              ]}
+            />
+          </View>
+        </View>
+      </View>
 
-      {/* Expo Go & Mobile Instructions Modal */}
-      {showExpoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-float-up text-slate-800 dark:text-slate-100">
-            <button
-              id="btn-close-expo-modal"
-              type="button"
-              onClick={() => setShowExpoModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
-              aria-label="Fechar"
+      {/* Expo Go Help Modal */}
+      <Modal
+        visible={showExpoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExpoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: dm.card,
+                borderColor: dm.border,
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={styles.modalIconBox}>
+                  <Smartphone size={22} color={COLORS.primary} />
+                </View>
+                <View>
+                  <Text style={[styles.modalTitle, { color: dm.text }]}>
+                    SEDA no Expo Go & Celular
+                  </Text>
+                  <Text style={styles.modalSubtitle}>Execução 100% Nativa Expo</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowExpoModal(false)}
+                style={styles.closeBtn}
+              >
+                <X size={20} color={dm.sub} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View
+                style={[
+                  styles.infoBox,
+                  { backgroundColor: `${COLORS.primary}12`, borderColor: `${COLORS.primary}30` },
+                ]}
+              >
+                <Text style={[styles.infoBoxTitle, { color: COLORS.primaryDk }]}>
+                  1. Como rodar no Expo Go (Físico):
+                </Text>
+                <Text style={[styles.infoBoxDesc, { color: dm.sub }]}>
+                  Execute <Text style={styles.codeText}>npx expo start</Text> no seu terminal e leia o QR Code com o aplicativo Expo Go (iOS ou Android).
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.infoBox,
+                  { backgroundColor: `${COLORS.accent}12`, borderColor: `${COLORS.accent}30` },
+                ]}
+              >
+                <Text style={[styles.infoBoxTitle, { color: COLORS.accent }]}>
+                  2. Acessibilidade SEDA 45+:
+                </Text>
+                <Text style={[styles.infoBoxDesc, { color: dm.sub }]}>
+                  Botões táteis de 48px+, suporte a modo escuro, gráficos SVG em tempo real e integração completa com a rede de saúde SUS.
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setShowExpoModal(false)}
+              style={styles.confirmModalBtn}
+              activeOpacity={0.8}
             >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-sky-500/15 flex items-center justify-center text-sky-600 dark:text-sky-400">
-                <Smartphone className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">SEDA no Celular & Expo Go</h3>
-                <p className="text-xs text-slate-500">Execução mobile instantânea</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">
-                  1. Acesso direto no Navegador do Celular (PWA/Web):
-                </p>
-                <p>
-                  Abra a URL deste aplicativo no Safari (iOS) ou Chrome (Android). Toque em <strong>"Compartilhar"</strong> e selecione <strong>"Adicionar à Tela de Início"</strong> para usar como app nativo em tela cheia com vibração e gravação de voz.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">
-                  2. Para Projeto React Native / Expo Go:
-                </p>
-                <p>
-                  A estrutura deste código segue rigorosamente o design system mobile da SEDA (React 19 + TypeScript). As telas, lógica de estado de hipertensão/glicemia e fluxos de emergência/SUS estão 100% integrados e prontos para exportação.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-200">
-                <p className="font-semibold">✨ Acessibilidade Ativa:</p>
-                <p>
-                  Botões de 48px+, fontes escaláveis, alto contraste e comandos por voz para idosos (45+) e cuidadores.
-                </p>
-              </div>
-            </div>
-
-            <button
-              id="btn-confirm-expo-modal"
-              type="button"
-              onClick={() => setShowExpoModal(false)}
-              className="mt-5 w-full py-3 rounded-xl font-bold text-sm bg-sky-600 hover:bg-sky-700 text-white shadow-md transition-all"
-            >
-              Entendido, explorar o App SEDA
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+              <Text style={styles.confirmModalBtnText}>Continuar no App</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webToolbar: {
+    width: '100%',
+    maxWidth: 440,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  toolbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+  toolbarTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  expoBadge: {
+    backgroundColor: 'rgba(94, 143, 192, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  expoBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#3D6E9F',
+    textTransform: 'uppercase',
+  },
+  toolbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  toolbarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(150, 150, 150, 0.12)',
+  },
+  toolbarButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  viewport: {
+    flex: 1,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  viewportSimulated: {
+    maxWidth: 410,
+    maxHeight: 860,
+    borderRadius: 40,
+    borderWidth: 8,
+    borderColor: '#1E3A5F',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.35,
+    shadowRadius: 28,
+  },
+  viewportFull: {
+    maxWidth: 540,
+  },
+  virtualStatusBar: {
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  virtualTimeText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dynamicIsland: {
+    width: 108,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0F172A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+  },
+  islandCamera: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1E293B',
+  },
+  islandIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  islandGreenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  islandSensor: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1E3A5F',
+  },
+  virtualIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  content: {
+    flex: 1,
+    position: 'relative',
+  },
+  homeIndicatorWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+  },
+  homeIndicator: {
+    width: 130,
+    height: 4,
+    borderRadius: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(94, 143, 192, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  infoBox: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  infoBoxTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  infoBoxDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  codeText: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '700',
+    color: '#3D6E9F',
+  },
+  confirmModalBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  confirmModalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});

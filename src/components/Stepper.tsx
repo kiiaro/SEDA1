@@ -1,5 +1,6 @@
 import React from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Minus, Plus } from 'lucide-react-native';
 
 interface StepperProps {
   value: number;
@@ -33,66 +34,108 @@ export const Stepper: React.FC<StepperProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center w-full my-1">
-      {label && (
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-          {label}
-        </span>
-      )}
-      <div className="flex items-center justify-between w-full max-w-[320px] px-2">
+    <View style={styles.container}>
+      {label && <Text style={styles.label}>{label}</Text>}
+      <View style={styles.row}>
         {/* Decrement Button */}
-        <button
-          id={`btn-dec-${label || unit}`}
-          type="button"
-          onClick={handleDec}
+        <TouchableOpacity
+          onPress={handleDec}
           disabled={value <= min}
-          className="btn-press flex items-center justify-center rounded-2xl shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{
-            width: 48,
-            height: 48,
-            backgroundColor: `${color}18`,
-            color: color,
-          }}
-          aria-label="Diminuir"
+          activeOpacity={0.7}
+          style={[
+            styles.button,
+            {
+              backgroundColor: `${color}18`,
+              opacity: value <= min ? 0.3 : 1,
+            },
+          ]}
+          accessibilityLabel="Diminuir"
         >
-          <Minus className="w-6 h-6 stroke-[2.8]" />
-        </button>
+          <Minus size={22} color={color} strokeWidth={2.8} />
+        </TouchableOpacity>
 
-        {/* Giant Number Value */}
-        <div className="flex flex-col items-center justify-center text-center select-none px-2 min-w-[140px]">
-          <span
-            className="font-black leading-none tracking-tighter"
-            style={{
-              fontSize: Math.round(50 * fontSizeScale),
-              letterSpacing: '-2px',
-              color: color,
-            }}
+        {/* Big Value Display */}
+        <View style={styles.valueContainer}>
+          <Text
+            style={[
+              styles.valueText,
+              {
+                fontSize: Math.round(48 * fontSizeScale),
+                color: color,
+              },
+            ]}
           >
             {value}
-          </span>
-          <span className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">
-            {unit}
-          </span>
-        </div>
+          </Text>
+          <Text style={styles.unitText}>{unit}</Text>
+        </View>
 
         {/* Increment Button */}
-        <button
-          id={`btn-inc-${label || unit}`}
-          type="button"
-          onClick={handleInc}
+        <TouchableOpacity
+          onPress={handleInc}
           disabled={value >= max}
-          className="btn-press flex items-center justify-center rounded-2xl shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{
-            width: 48,
-            height: 48,
-            backgroundColor: `${color}18`,
-            color: color,
-          }}
-          aria-label="Aumentar"
+          activeOpacity={0.7}
+          style={[
+            styles.button,
+            {
+              backgroundColor: `${color}18`,
+              opacity: value >= max ? 0.3 : 1,
+            },
+          ]}
+          accessibilityLabel="Aumentar"
         >
-          <Plus className="w-6 h-6 stroke-[2.8]" />
-        </button>
-      </div>
-    </div>
+          <Plus size={22} color={color} strokeWidth={2.8} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 4,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 320,
+    paddingHorizontal: 8,
+  },
+  button: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valueContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 130,
+  },
+  valueText: {
+    fontWeight: '900',
+    letterSpacing: -1.5,
+    lineHeight: 52,
+  },
+  unitText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: 2,
+  },
+});

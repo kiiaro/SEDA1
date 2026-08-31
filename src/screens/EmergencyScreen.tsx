@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Linking,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
   Phone,
   PhoneCall,
   MapPin,
   Users,
-  ShieldAlert,
-  AlertTriangle,
   CheckCircle2,
   X,
-  Volume2,
-} from 'lucide-react';
-import { COLORS } from '../constants/theme';
+} from 'lucide-react-native';
 import { DarkModeTheme, FamilyMember } from '../types';
 import { BackHeader } from '../components/BackHeader';
 
@@ -20,11 +25,10 @@ interface EmergencyScreenProps {
   dm: DarkModeTheme;
 }
 
-export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({ family, onBack, dm }) => {
+export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({ onBack, dm }) => {
   const [state, setState] = useState<'idle' | 'confirm' | 'activated'>('idle');
   const [count, setCount] = useState(5);
 
-  // Countdown timer for 'confirm' state
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (state === 'confirm') {
@@ -51,214 +55,485 @@ export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({ family, onBack
     setCount(5);
   };
 
+  const handleCallSamu = () => {
+    Linking.openURL('tel:192');
+  };
+
   return (
-    <div
-      className="flex-1 flex flex-col select-none pb-6 transition-colors duration-300"
-      style={{
-        backgroundColor: state === 'activated' ? '#FEE8E8' : dm.bg,
-      }}
+    <ScrollView
+      style={[
+        styles.container,
+        { backgroundColor: state === 'activated' ? '#FEE8E8' : dm.bg },
+      ]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
     >
       <BackHeader
         title="Socorro & Emergência SAMU"
         subtitle="Linha direta com SAMU 192 e Cuidadores"
         onBack={onBack}
-        bgGradient={
-          state === 'activated'
-            ? 'linear-gradient(160deg, #991B1B 0%, #E45454 100%)'
-            : 'linear-gradient(160deg, #B91C1C 0%, #E45454 100%)'
-        }
+        bgGradient={['#991B1B', '#E45454']}
       />
 
       {/* STATE 1: IDLE */}
       {state === 'idle' && (
-        <div className="flex-1 p-5 flex flex-col justify-between items-center text-center animate-fade-in">
-          <div>
-            <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-500/15 text-red-600 border border-red-500/30">
-              Canal de Emergência Imediata
-            </span>
-            <h2 className="text-xl font-black mt-2 tracking-tight" style={{ color: dm.text }}>
+        <View style={styles.idleContainer}>
+          <View style={styles.idleHeader}>
+            <View style={styles.badgeDanger}>
+              <Text style={styles.badgeDangerText}>Canal de Emergência Imediata</Text>
+            </View>
+            <Text style={[styles.idleTitle, { color: dm.text }]}>
               Pressione para Acionar Socorro
-            </h2>
-            <p className="text-xs text-slate-500 mt-1 max-w-[280px]">
+            </Text>
+            <Text style={[styles.idleDesc, { color: dm.sub }]}>
               Se você estiver sentindo dor no peito, falta de ar, dormência ou tontura severa.
-            </p>
-          </div>
+            </Text>
+          </View>
 
-          {/* Big Circular Danger Button (180x180px) with 2 pulse-rings (180px + 220px) */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div
-              className="absolute rounded-full border-2 border-red-400 animate-pulse-ring"
-              style={{ width: 220, height: 220 }}
-            />
-            <div
-              className="absolute rounded-full border-2 border-red-300 animate-pulse-ring"
-              style={{ width: 260, height: 260, animationDelay: '0.4s' }}
-            />
+          {/* Big Circular Danger Button */}
+          <View style={styles.sosButtonWrapper}>
+            <View style={styles.pulseRingOuter} />
+            <View style={styles.pulseRingInner} />
 
-            <button
-              id="btn-sos-main-trigger"
-              type="button"
-              onClick={handleStartEmergency}
-              className="btn-press relative rounded-full flex flex-col items-center justify-center shadow-2xl text-white z-10"
-              style={{
-                width: 180,
-                height: 180,
-                background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-                boxShadow: '0 16px 48px rgba(220, 38, 38, 0.55)',
-              }}
-              aria-label="Acionar SOS Emergência"
+            <TouchableOpacity
+              onPress={handleStartEmergency}
+              activeOpacity={0.85}
+              style={styles.sosButton}
             >
-              <Phone className="w-14 h-14 stroke-[2.4] fill-white animate-pulse" />
-              <span className="text-xl font-black tracking-wider mt-1 uppercase">SOS 192</span>
-              <span className="text-[10px] uppercase font-bold text-red-200 tracking-widest">
-                Toque aqui
-              </span>
-            </button>
-          </div>
+              <LinearGradient
+                colors={['#DC2626', '#991B1B']}
+                style={styles.sosGradient}
+              >
+                <Phone size={48} color="#FFFFFF" />
+                <Text style={styles.sosText}>SOS 192</Text>
+                <Text style={styles.sosSub}>Toque aqui</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
 
           {/* 3 Quick Action Cards */}
-          <div className="w-full space-y-2 text-left">
-            <a
-              href="tel:192"
-              className="btn-press p-3.5 rounded-2xl border flex items-center justify-between shadow-xs"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+          <View style={styles.quickCards}>
+            <TouchableOpacity
+              onPress={handleCallSamu}
+              activeOpacity={0.7}
+              style={[
+                styles.actionCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-red-500/15 flex items-center justify-center text-red-600">
-                  <PhoneCall className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: dm.text }}>
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                  <PhoneCall size={18} color="#EF4444" />
+                </View>
+                <View>
+                  <Text style={[styles.actionCardTitle, { color: dm.text }]}>
                     Ligar Diretamente para o SAMU 192
-                  </p>
-                  <p className="text-[10px] text-slate-400">Ligação pública gratuita</p>
-                </div>
-              </div>
-              <span className="text-xs font-bold text-red-600">192</span>
-            </a>
+                  </Text>
+                  <Text style={[styles.actionCardSub, { color: dm.sub }]}>
+                    Ligação pública gratuita
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.samuNumber}>192</Text>
+            </TouchableOpacity>
 
-            <div
-              className="p-3.5 rounded-2xl border flex items-center justify-between shadow-xs"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            <View
+              style={[
+                styles.actionCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center text-sky-600">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: dm.text }}>
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIconBox, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
+                  <MapPin size={18} color="#0EA5E9" />
+                </View>
+                <View>
+                  <Text style={[styles.actionCardTitle, { color: dm.text }]}>
                     Compartilhar GPS com UBS Local
-                  </p>
-                  <p className="text-[10px] text-slate-400">UBS Vila Mariana (800m de distância)</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-sky-500/10 text-sky-700">
-                Ativo
-              </span>
-            </div>
+                  </Text>
+                  <Text style={[styles.actionCardSub, { color: dm.sub }]}>
+                    UBS Vila Mariana (800m de distância)
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statusActiveBadge}>
+                <Text style={styles.statusActiveText}>Ativo</Text>
+              </View>
+            </View>
 
-            <div
-              className="p-3.5 rounded-2xl border flex items-center justify-between shadow-xs"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-              }}
+            <View
+              style={[
+                styles.actionCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: dm.text }}>
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIconBox, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+                  <Users size={18} color="#22C55E" />
+                </View>
+                <View>
+                  <Text style={[styles.actionCardTitle, { color: dm.text }]}>
                     Avisar Rede Familiar (2 Cuidadores)
-                  </p>
-                  <p className="text-[10px] text-slate-400">Ana Silva e Dr. Lucas</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-700">
-                Pronto
-              </span>
-            </div>
-          </div>
-        </div>
+                  </Text>
+                  <Text style={[styles.actionCardSub, { color: dm.sub }]}>
+                    Ana Silva e Dr. Lucas
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statusReadyBadge}>
+                <Text style={styles.statusReadyText}>Pronto</Text>
+              </View>
+            </View>
+          </View>
+        </View>
       )}
 
       {/* STATE 2: CONFIRM COUNTDOWN */}
       {state === 'confirm' && (
-        <div className="flex-1 p-6 flex flex-col justify-center items-center text-center animate-fade-in">
-          <div className="mb-4">
-            <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-red-600 text-white shadow-md">
-              Acionando Socorro em...
-            </span>
-          </div>
+        <View style={styles.confirmContainer}>
+          <View style={styles.confirmBadge}>
+            <Text style={styles.confirmBadgeText}>Acionando Socorro em...</Text>
+          </View>
 
-          {/* Circular Countdown Div with Danger Border */}
-          <div
-            className="w-48 h-48 rounded-full border-8 border-red-500 bg-red-50 dark:bg-slate-900 flex flex-col items-center justify-center shadow-2xl my-6 animate-pulse"
+          <View style={styles.countdownCircle}>
+            <Text style={styles.countdownNumber}>{count}</Text>
+            <Text style={styles.countdownUnit}>segundos</Text>
+          </View>
+
+          <Text style={[styles.confirmDesc, { color: dm.sub }]}>
+            O SAMU 192 e sua família receberão seu chamado com suas coordenadas GPS.
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleCancelCountdown}
+            activeOpacity={0.8}
+            style={[
+              styles.cancelBtn,
+              { backgroundColor: dm.card, borderColor: dm.border },
+            ]}
           >
-            <span className="text-7xl font-black text-red-600 tracking-tighter">{count}</span>
-            <span className="text-xs font-bold text-red-500 uppercase tracking-widest mt-1">
-              segundos
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-500 max-w-[260px] mb-8 font-medium">
-            O SAMU 192 e sua filha Ana Silva receberão seu chamado com suas coordenadas GPS.
-          </p>
-
-          <button
-            id="btn-cancel-countdown"
-            type="button"
-            onClick={handleCancelCountdown}
-            className="btn-press w-full py-4 rounded-2xl font-black text-slate-700 dark:text-slate-200 text-sm border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-md flex items-center justify-center gap-2"
-          >
-            <X className="w-5 h-5 text-red-500" />
-            <span>Cancelar Chamado de Emergência</span>
-          </button>
-        </div>
+            <X size={18} color="#EF4444" />
+            <Text style={[styles.cancelBtnText, { color: dm.text }]}>
+              Cancelar Chamado de Emergência
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
-      {/* STATE 3: ACTIVATED CONFIRMATION */}
+      {/* STATE 3: ACTIVATED */}
       {state === 'activated' && (
-        <div className="flex-1 p-6 flex flex-col justify-center items-center text-center animate-float-up">
-          <div className="w-24 h-24 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl mb-4 animate-bounce">
-            <CheckCircle2 className="w-14 h-14" />
-          </div>
+        <View style={styles.activatedContainer}>
+          <View style={styles.successIconBox}>
+            <CheckCircle2 size={44} color="#FFFFFF" />
+          </View>
 
-          <h2 className="text-2xl font-black text-red-950 tracking-tight">
+          <Text style={styles.activatedTitle}>
             Chamado de Emergência Enviado!
-          </h2>
+          </Text>
 
-          <p className="text-sm text-red-800 font-semibold mt-2 max-w-[290px] leading-relaxed">
-            A central do <strong>SAMU 192</strong> e sua rede de cuidadores já foram notificadas com sua localização e histórico recente de pressão.
-          </p>
+          <Text style={styles.activatedDesc}>
+            A central do <Text style={{ fontWeight: '800' }}>SAMU 192</Text> e sua rede de cuidadores já foram notificadas com sua localização e histórico recente de pressão.
+          </Text>
 
-          <div className="w-full bg-white/90 rounded-2xl p-4 border border-red-200 text-left my-6 space-y-2 text-xs shadow-sm">
-            <div className="flex items-center gap-2 text-red-900 font-bold">
-              <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-              <span>Instruções enquanto o socorro se desloca:</span>
-            </div>
-            <p className="text-slate-700">1. Sente-se confortavelmente e evite movimentos bruscos.</p>
-            <p className="text-slate-700">2. Mantenha a porta destravada caso more sozinho.</p>
-            <p className="text-slate-700">3. Deixe documentos e cartão do SUS à mão.</p>
-          </div>
+          <View style={styles.instructionsCard}>
+            <Text style={styles.instHeader}>
+              ● Instruções enquanto o socorro se desloca:
+            </Text>
+            <Text style={styles.instText}>1. Sente-se confortavelmente e evite movimentos bruscos.</Text>
+            <Text style={styles.instText}>2. Mantenha a porta destravada caso more sozinho.</Text>
+            <Text style={styles.instText}>3. Deixe documentos e cartão do SUS à mão.</Text>
+          </View>
 
-          <button
-            id="btn-reset-emergency"
-            type="button"
-            onClick={() => setState('idle')}
-            className="btn-press w-full py-4 rounded-2xl font-bold text-white bg-red-700 shadow-lg text-sm"
+          <TouchableOpacity
+            onPress={() => setState('idle')}
+            activeOpacity={0.8}
+            style={styles.resetBtn}
           >
-            Voltar ao Modo Normal
-          </button>
-        </div>
+            <Text style={styles.resetBtnText}>Voltar ao Modo Normal</Text>
+          </TouchableOpacity>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  idleContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  idleHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  badgeDanger: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    marginBottom: 8,
+  },
+  badgeDangerText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#DC2626',
+    textTransform: 'uppercase',
+  },
+  idleTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  idleDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 4,
+    maxWidth: 280,
+    lineHeight: 16,
+  },
+  sosButtonWrapper: {
+    position: 'relative',
+    width: 220,
+    height: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 14,
+  },
+  pulseRingOuter: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 2,
+    borderColor: 'rgba(248, 113, 113, 0.3)',
+  },
+  pulseRingInner: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    borderWidth: 2,
+    borderColor: 'rgba(248, 113, 113, 0.5)',
+  },
+  sosButton: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    elevation: 8,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    overflow: 'hidden',
+  },
+  sosGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sosText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  sosSub: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  quickCards: {
+    width: '100%',
+    gap: 8,
+    marginTop: 10,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  actionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  actionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  actionCardSub: {
+    fontSize: 9,
+    marginTop: 1,
+  },
+  samuNumber: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#DC2626',
+  },
+  statusActiveBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+  },
+  statusActiveText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  statusReadyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+  },
+  statusReadyText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  confirmContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 400,
+  },
+  confirmBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#DC2626',
+    marginBottom: 20,
+  },
+  confirmBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  countdownCircle: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 6,
+    borderColor: '#EF4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  countdownNumber: {
+    fontSize: 60,
+    fontWeight: '900',
+    color: '#DC2626',
+  },
+  countdownUnit: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#EF4444',
+    textTransform: 'uppercase',
+  },
+  confirmDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+    maxWidth: 240,
+    marginBottom: 24,
+  },
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  cancelBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  activatedContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    elevation: 4,
+  },
+  activatedTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#450A0A',
+    textAlign: 'center',
+  },
+  activatedDesc: {
+    fontSize: 12,
+    color: '#7F1D1D',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 18,
+    maxWidth: 290,
+  },
+  instructionsCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    marginVertical: 20,
+    gap: 6,
+  },
+  instHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#991B1B',
+    marginBottom: 2,
+  },
+  instText: {
+    fontSize: 11,
+    color: '#334155',
+  },
+  resetBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#B91C1C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});

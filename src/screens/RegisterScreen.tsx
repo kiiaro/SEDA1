@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, UserCheck, ShieldCheck, Heart } from 'lucide-react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
-import { DarkModeTheme, Screen } from '../types';
+import { DarkModeTheme } from '../types';
 import { BackHeader } from '../components/BackHeader';
 
 interface RegisterScreenProps {
@@ -23,184 +31,214 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [password, setPassword] = useState('123456');
   const [confirmPassword, setConfirmPassword] = useState('123456');
 
-  const userTypes: ('Paciente' | 'Familiar' | 'Profissional')[] = ['Paciente', 'Familiar', 'Profissional'];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onRegisterComplete();
-  };
+  const userTypes: ('Paciente' | 'Familiar' | 'Profissional')[] = [
+    'Paciente',
+    'Familiar',
+    'Profissional',
+  ];
 
   return (
-    <div className="flex-1 flex flex-col select-none transition-colors duration-300" style={{ backgroundColor: dm.bg }}>
+    <View style={[styles.container, { backgroundColor: dm.bg }]}>
       <BackHeader
         title="Cadastro SEDA"
         subtitle="Vínculo integrado com UBS & SUS"
         onBack={onBack}
       />
 
-      <form onSubmit={handleSubmit} className="flex-1 p-5 space-y-4 overflow-y-auto">
-        {/* User Type Selector Toggle */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: dm.sub }}>
-            Tipo de Perfil
-          </label>
-          <div className="grid grid-cols-3 gap-2">
+      <ScrollView
+        style={styles.formScroll}
+        contentContainerStyle={styles.formContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* User Type Toggle */}
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: dm.sub }]}>Tipo de Perfil</Text>
+          <View style={styles.typeRow}>
             {userTypes.map((type) => {
               const isSelected = userType === type;
               return (
-                <button
-                  id={`btn-usertype-${type}`}
+                <TouchableOpacity
                   key={type}
-                  type="button"
-                  onClick={() => setUserType(type)}
-                  className="btn-press py-2.5 px-2 rounded-xl text-xs font-bold border transition-all text-center"
-                  style={{
-                    backgroundColor: isSelected ? `${COLORS.primary}18` : dm.card,
-                    borderColor: isSelected ? COLORS.primary : dm.border,
-                    color: isSelected ? COLORS.primary : dm.sub,
-                    boxShadow: isSelected ? `0 2px 8px ${COLORS.primary}30` : 'none',
-                  }}
+                  onPress={() => setUserType(type)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.typeBtn,
+                    {
+                      backgroundColor: isSelected ? `${COLORS.primary}18` : dm.card,
+                      borderColor: isSelected ? COLORS.primary : dm.border,
+                    },
+                  ]}
                 >
-                  {type}
-                </button>
+                  <Text
+                    style={[
+                      styles.typeBtnText,
+                      {
+                        color: isSelected ? COLORS.primary : dm.sub,
+                        fontWeight: isSelected ? '800' : '600',
+                      },
+                    ]}
+                  >
+                    {type}
+                  </Text>
+                </TouchableOpacity>
               );
             })}
-          </div>
-        </div>
+          </View>
+        </View>
 
         {/* Input Fields */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-            Nome Completo
-          </label>
-          <input
-            id="input-reg-name"
-            type="text"
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: dm.sub }]}>Nome Completo</Text>
+          <TextInput
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-              color: dm.text,
-            }}
+            onChangeText={setName}
+            style={[
+              styles.input,
+              { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+            ]}
           />
-        </div>
+        </View>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-              CPF
-            </label>
-            <input
-              id="input-reg-cpf"
-              type="text"
+        <View style={styles.row}>
+          <View style={[styles.section, { flex: 1 }]}>
+            <Text style={[styles.label, { color: dm.sub }]}>CPF</Text>
+            <TextInput
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
-              required
-              className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-                color: dm.text,
-              }}
+              onChangeText={setCpf}
+              style={[
+                styles.input,
+                { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+              ]}
             />
-          </div>
+          </View>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-              Nascimento
-            </label>
-            <input
-              id="input-reg-birth"
-              type="text"
+          <View style={[styles.section, { flex: 1 }]}>
+            <Text style={[styles.label, { color: dm.sub }]}>Nascimento</Text>
+            <TextInput
               value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              required
-              className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-                color: dm.text,
-              }}
+              onChangeText={setBirthDate}
+              style={[
+                styles.input,
+                { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+              ]}
             />
-          </div>
-        </div>
+          </View>
+        </View>
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-            Telefone / WhatsApp
-          </label>
-          <input
-            id="input-reg-phone"
-            type="text"
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: dm.sub }]}>Telefone / WhatsApp</Text>
+          <TextInput
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-            style={{
-              backgroundColor: dm.card,
-              borderColor: dm.border,
-              color: dm.text,
-            }}
+            onChangeText={setPhone}
+            style={[
+              styles.input,
+              { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+            ]}
           />
-        </div>
+        </View>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-              Senha
-            </label>
-            <input
-              id="input-reg-pass1"
-              type="password"
+        <View style={styles.row}>
+          <View style={[styles.section, { flex: 1 }]}>
+            <Text style={[styles.label, { color: dm.sub }]}>Senha</Text>
+            <TextInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-                color: dm.text,
-              }}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={[
+                styles.input,
+                { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+              ]}
             />
-          </div>
+          </View>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: dm.sub }}>
-              Confirmar
-            </label>
-            <input
-              id="input-reg-pass2"
-              type="password"
+          <View style={[styles.section, { flex: 1 }]}>
+            <Text style={[styles.label, { color: dm.sub }]}>Confirmar</Text>
+            <TextInput
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-3.5 py-3 rounded-xl text-sm font-medium border outline-hidden"
-              style={{
-                backgroundColor: dm.card,
-                borderColor: dm.border,
-                color: dm.text,
-              }}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              style={[
+                styles.input,
+                { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
+              ]}
             />
-          </div>
-        </div>
+          </View>
+        </View>
 
         {/* Submit */}
-        <button
-          id="btn-reg-complete"
-          type="submit"
-          className="btn-press w-full py-4 rounded-xl font-bold text-white text-base shadow-md flex items-center justify-center gap-2 mt-4"
-          style={{
-            backgroundColor: COLORS.primary,
-            boxShadow: `0 8px 20px ${COLORS.primary}40`,
-          }}
+        <TouchableOpacity
+          onPress={onRegisterComplete}
+          activeOpacity={0.8}
+          style={[styles.submitBtn, { backgroundColor: COLORS.primary }]}
         >
-          <span>Finalizar Cadastro</span>
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      </form>
-    </div>
+          <Text style={styles.submitBtnText}>Finalizar Cadastro</Text>
+          <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  formScroll: {
+    flex: 1,
+  },
+  formContent: {
+    padding: 20,
+    gap: 14,
+  },
+  section: {
+    gap: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  typeBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeBtnText: {
+    fontSize: 12,
+  },
+  input: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    fontSize: 14,
+    borderWidth: 1.5,
+    fontWeight: '600',
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 10,
+    elevation: 4,
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});

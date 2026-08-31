@@ -1,4 +1,6 @@
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
 
 interface HealthRingProps {
   value: number;
@@ -28,62 +30,85 @@ export const HealthRing: React.FC<HealthRingProps> = ({
   const strokeDashoffset = circumference - progressRatio * circumference;
 
   return (
-    <div
-      className="relative flex flex-col items-center justify-center inline-flex"
-      style={{ width: size, height: size }}
-    >
-      <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90 origin-center"
-        style={{ overflow: 'visible' }}
-      >
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeOpacity={0.22}
-        />
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          style={{
-            transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease',
-          }}
-        />
-      </svg>
+    <View style={[styles.container, { width: size, height: size }]}>
+      <Svg width={size} height={size}>
+        <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+          {/* Background circle */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeOpacity={0.2}
+          />
+          {/* Progress circle */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </G>
+      </Svg>
 
       {/* Centered value and unit */}
-      <div
-        className="absolute inset-0 flex flex-col items-center justify-center text-center select-none"
-        style={{ color: textColor || color }}
-      >
-        <span className="font-extrabold tracking-tight leading-none text-base sm:text-lg">
+      <View style={styles.centerContent} pointerEvents="none">
+        <Text style={[styles.valueText, { color: textColor || color }]}>
           {value}
-        </span>
+        </Text>
         {unit && (
-          <span className="text-[10px] opacity-80 font-medium tracking-wide mt-0.5">
+          <Text style={[styles.unitText, { color: textColor || color }]}>
             {unit}
-          </span>
+          </Text>
         )}
         {label && (
-          <span className="text-[9px] font-semibold uppercase tracking-wider opacity-70">
+          <Text style={[styles.labelText, { color: textColor || color }]}>
             {label}
-          </span>
+          </Text>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  centerContent: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  valueText: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    lineHeight: 22,
+  },
+  unitText: {
+    fontSize: 10,
+    fontWeight: '600',
+    opacity: 0.85,
+    marginTop: 1,
+  },
+  labelText: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    opacity: 0.75,
+  },
+});

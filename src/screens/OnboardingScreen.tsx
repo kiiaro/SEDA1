@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, HeartPulse, Droplets, Mic, ShieldAlert } from 'lucide-react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Svg, { Circle, Path, Rect, Line } from 'react-native-svg';
+import { ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme } from '../types';
 
@@ -17,29 +19,21 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       title: 'Controle de Pressão & Coração',
       sub: 'Monitore sua pressão arterial diariamente com botões grandes, alertas visuais imediatos e relatórios para a UBS.',
       color: COLORS.danger,
-      bgGradient: 'linear-gradient(135deg, rgba(228,84,84,0.12) 0%, rgba(94,143,192,0.1) 100%)',
       badge: 'Pressão Arterial',
-      icon: (
-        <svg viewBox="0 0 200 200" className="w-44 h-44 drop-shadow-md">
-          <circle cx="100" cy="100" r="85" fill="#E45454" fillOpacity="0.12" />
-          <circle cx="100" cy="100" r="65" fill="#E45454" fillOpacity="0.2" />
-          <circle cx="100" cy="100" r="45" fill="#E45454" />
-          <path
-            d="M80 100 Q90 80 100 100 T120 100"
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <path
+      renderIcon: () => (
+        <Svg width={160} height={160} viewBox="0 0 200 200">
+          <Circle cx="100" cy="100" r="85" fill="#E45454" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#E45454" fillOpacity={0.2} />
+          <Circle cx="100" cy="100" r="45" fill="#E45454" />
+          <Path
             d="M65 100 L80 100 L90 75 L105 125 L115 88 L125 100 L140 100"
             fill="none"
             stroke="#FFFFFF"
-            strokeWidth="3.5"
+            strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
+        </Svg>
       ),
     },
     {
@@ -47,50 +41,41 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       title: 'Glicose em Equilíbrio',
       sub: 'Registre suas taxas de glicemia antes e após as refeições de forma simples e sem complicações numéricas.',
       color: COLORS.accent,
-      bgGradient: 'linear-gradient(135deg, rgba(89,185,138,0.15) 0%, rgba(124,201,190,0.1) 100%)',
       badge: 'Glicemia & Dieta',
-      icon: (
-        <svg viewBox="0 0 200 200" className="w-44 h-44 drop-shadow-md">
-          <circle cx="100" cy="100" r="85" fill="#59B98A" fillOpacity="0.12" />
-          <circle cx="100" cy="100" r="65" fill="#59B98A" fillOpacity="0.2" />
-          <path
+      renderIcon: () => (
+        <Svg width={160} height={160} viewBox="0 0 200 200">
+          <Circle cx="100" cy="100" r="85" fill="#59B98A" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#59B98A" fillOpacity={0.2} />
+          <Path
             d="M100 50 C100 50 65 95 65 125 C65 145 80 160 100 160 C120 160 135 145 135 125 C135 95 100 50 100 50 Z"
             fill="#59B98A"
           />
-          <circle cx="88" cy="120" r="6" fill="#FFFFFF" fillOpacity="0.6" />
-          <path
-            d="M92 105 Q100 95 108 105"
-            stroke="#FFFFFF"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
+          <Circle cx="88" cy="120" r="6" fill="#FFFFFF" fillOpacity={0.6} />
+        </Svg>
       ),
     },
     {
       id: 2,
-      title: 'Voz, Família e Conexão SUS',
+      title: 'Voz, Família e SUS',
       sub: 'Fale seus números por voz, compartilhe com seus filhos ou cuidadores e acesse consultas do SUS com 1 toque.',
       color: COLORS.primary,
-      bgGradient: 'linear-gradient(135deg, rgba(94,143,192,0.18) 0%, rgba(107,127,212,0.12) 100%)',
       badge: 'Cuidado Integrado',
-      icon: (
-        <svg viewBox="0 0 200 200" className="w-44 h-44 drop-shadow-md">
-          <circle cx="100" cy="100" r="85" fill="#5E8FC0" fillOpacity="0.12" />
-          <circle cx="100" cy="100" r="65" fill="#5E8FC0" fillOpacity="0.2" />
-          <circle cx="100" cy="100" r="48" fill="#5E8FC0" />
-          <rect x="91" y="75" width="18" height="32" rx="9" fill="#FFFFFF" />
-          <path
+      renderIcon: () => (
+        <Svg width={160} height={160} viewBox="0 0 200 200">
+          <Circle cx="100" cy="100" r="85" fill="#5E8FC0" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#5E8FC0" fillOpacity={0.2} />
+          <Circle cx="100" cy="100" r="48" fill="#5E8FC0" />
+          <Rect x="91" y="75" width="18" height="32" rx="9" fill="#FFFFFF" />
+          <Path
             d="M80 95 C80 110 120 110 120 95"
             fill="none"
             stroke="#FFFFFF"
             strokeWidth="3.5"
             strokeLinecap="round"
           />
-          <line x1="100" y1="113" x2="100" y2="128" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="88" y1="128" x2="112" y2="128" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
-        </svg>
+          <Line x1="100" y1="113" x2="100" y2="128" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
+          <Line x1="88" y1="128" x2="112" y2="128" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
+        </Svg>
       ),
     },
   ];
@@ -106,96 +91,148 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
   };
 
   return (
-    <div
-      className="flex-1 flex flex-col justify-between p-6 select-none transition-colors duration-300"
-      style={{ backgroundColor: dm.bg }}
-    >
-      {/* Top Bar with Skip */}
-      <div className="flex items-center justify-between pt-2">
-        <span
-          className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-          style={{
-            backgroundColor: `${slide.color}18`,
-            color: slide.color,
-          }}
-        >
-          {slide.badge}
-        </span>
+    <View style={[styles.container, { backgroundColor: dm.bg }]}>
+      {/* Top Header */}
+      <View style={styles.topBar}>
+        <View style={[styles.badge, { backgroundColor: `${slide.color}20` }]}>
+          <Text style={[styles.badgeText, { color: slide.color }]}>{slide.badge}</Text>
+        </View>
 
-        <button
-          id="btn-skip-onboarding"
-          type="button"
-          onClick={onFinish}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
-        >
-          Pular
-        </button>
-      </div>
+        <TouchableOpacity onPress={onFinish} activeOpacity={0.7} style={styles.skipBtn}>
+          <Text style={[styles.skipText, { color: dm.sub }]}>Pular</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Main Slide Content */}
-      <div
-        key={currentSlide}
-        className="flex-1 flex flex-col items-center justify-center text-center my-4 animate-float-up"
-      >
-        {/* Visual Illustration */}
-        <div
-          className="p-6 rounded-3xl mb-6 transition-all"
-          style={{ background: slide.bgGradient }}
-        >
-          {slide.icon}
-        </div>
+      {/* Main Slide Body */}
+      <View style={styles.bodyGroup}>
+        <View style={[styles.iconCard, { backgroundColor: `${slide.color}14` }]}>
+          {slide.renderIcon()}
+        </View>
 
-        <h2
-          className="text-2xl font-black tracking-tight mb-3"
-          style={{ color: dm.text }}
-        >
-          {slide.title}
-        </h2>
+        <Text style={[styles.slideTitle, { color: dm.text }]}>{slide.title}</Text>
+        <Text style={[styles.slideSub, { color: dm.sub }]}>{slide.sub}</Text>
+      </View>
 
-        <p
-          className="text-sm font-medium leading-relaxed max-w-[300px]"
-          style={{ color: dm.sub }}
-        >
-          {slide.sub}
-        </p>
-      </div>
-
-      {/* Footer Dots and Action Button */}
-      <div className="flex flex-col gap-5 pb-2">
-        {/* Interactive Dots */}
-        <div className="flex items-center justify-center gap-2">
+      {/* Footer Controls */}
+      <View style={styles.footer}>
+        <View style={styles.dotRow}>
           {slides.map((s, idx) => (
-            <button
-              id={`btn-dot-onboarding-${idx}`}
+            <TouchableOpacity
               key={s.id}
-              type="button"
-              onClick={() => setCurrentSlide(idx)}
-              className="transition-all duration-300 rounded-full"
-              style={{
-                width: currentSlide === idx ? 28 : 8,
-                height: 8,
-                backgroundColor: currentSlide === idx ? slide.color : 'rgba(148, 163, 184, 0.35)',
-              }}
-              aria-label={`Slide ${idx + 1}`}
+              onPress={() => setCurrentSlide(idx)}
+              style={[
+                styles.dotItem,
+                {
+                  width: currentSlide === idx ? 28 : 8,
+                  backgroundColor: currentSlide === idx ? slide.color : 'rgba(148, 163, 184, 0.4)',
+                },
+              ]}
             />
           ))}
-        </div>
+        </View>
 
-        {/* Primary Next / Start Button */}
-        <button
-          id="btn-next-onboarding"
-          type="button"
-          onClick={handleNext}
-          className="btn-press w-full py-4 rounded-2xl font-bold text-white text-base shadow-lg flex items-center justify-center gap-2 transition-all"
-          style={{
-            backgroundColor: slide.color,
-            boxShadow: `0 10px 25px ${slide.color}40`,
-          }}
+        <TouchableOpacity
+          onPress={handleNext}
+          activeOpacity={0.8}
+          style={[styles.actionBtn, { backgroundColor: slide.color }]}
         >
-          <span>{currentSlide === slides.length - 1 ? 'Começar a Cuidar' : 'Próximo'}</span>
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+          <Text style={styles.actionBtnText}>
+            {currentSlide === slides.length - 1 ? 'Começar a Cuidar' : 'Próximo'}
+          </Text>
+          <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  skipBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  skipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  bodyGroup: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 'auto',
+  },
+  iconCard: {
+    padding: 20,
+    borderRadius: 36,
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slideTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 10,
+  },
+  slideSub: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    fontWeight: '500',
+    maxWidth: 290,
+  },
+  footer: {
+    gap: 20,
+    paddingBottom: 8,
+  },
+  dotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dotItem: {
+    height: 8,
+    borderRadius: 4,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+});
