@@ -45,7 +45,7 @@ export default function App() {
   // Central application state
   const [screen, setScreen] = useState<Screen>('splash');
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [isSimulatorMode, setIsSimulatorMode] = useState<boolean>(Platform.OS === 'web');
+  const [isSimulatorMode, setIsSimulatorMode] = useState<boolean>(false);
 
   // User Profile & Data
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
