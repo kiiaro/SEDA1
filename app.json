@@ -16,10 +16,16 @@
     },
     "android": {
       "package": "br.gov.sus.seda",
-      "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
