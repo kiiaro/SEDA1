@@ -48,6 +48,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.editProfileBtn}
+          onPress={() => onNavigate('settings')}
+        >
+          <Text style={styles.editProfileBtnText}>Editar perfil</Text>
+        </TouchableOpacity>
+
         <View style={styles.avatarWrapper}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>AS</Text>
@@ -223,6 +231,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    position: 'relative',
+  },
+  editProfileBtn: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  editProfileBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   avatarWrapper: {
     position: 'relative',
