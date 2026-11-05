@@ -13,7 +13,7 @@ import {
   PhoneCall,
   HeartPulse,
   Droplets,
-  Mic,
+  FileText,
   BarChart3,
   Users,
   Calendar,
@@ -69,11 +69,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return COLORS.accent;
   };
 
-  const systolicColor = getSystolicStatusColor(pressSys);
-  const glucoseColor = getGlucoseStatusColor(glucose);
+  const latestPressure = records.find((r) => r.measurement !== 'glucose');
+  const latestGlucose = records.find((r) => r.measurement !== 'pressure');
+  const latestPulse = records.find((r) => r.hasHeartRate);
+  const systolicColor = getSystolicStatusColor(latestPressure?.systolic ?? 0);
+  const glucoseColor = getGlucoseStatusColor(latestGlucose?.glucose ?? 0);
 
   const nextAppt = appointments
-    .filter((a) => a.status !== 'cancelled' && a.status !== 'completed')
+    .filter((a) => a.status !== 'cancelled' && a.status !== 'completed' && a.date >= new Date().toLocaleDateString('sv-SE'))
     .sort((a, b) => a.date.localeCompare(b.date))[0];
 
   const getApptDaysText = (dateStr: string) => {
@@ -95,7 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   // SVG Chart points calculation for 7 days
-  const recentRecords = [...records].slice(0, 7).reverse();
+  const recentRecords = records.filter((r) => r.measurement !== 'glucose').slice(0, 7).reverse();
   const chartWidth = 300;
   const chartHeight = 85;
   const minVal = 100;
@@ -115,6 +118,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const areaD = points.length > 0
     ? `${pathD} L ${points[points.length - 1].x},${chartHeight} L ${points[0].x},${chartHeight} Z`
     : '';
+  const averageSystolic = recentRecords.length
+    ? Math.round(recentRecords.reduce((sum, record) => sum + record.systolic, 0) / recentRecords.length)
+    : null;
 
   return (
     <ScrollView
@@ -165,21 +171,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={[styles.vitalItem, styles.vitalDivider]}>
             <Text style={styles.vitalLabel}>Pressão</Text>
             <Text style={styles.vitalValue}>
-              {pressSys}/{pressDia}
+              {latestPressure ? `${latestPressure.systolic}/${latestPressure.diastolic}` : '—'}
             </Text>
             <Text style={styles.vitalUnit}>mmHg</Text>
           </View>
 
           <View style={[styles.vitalItem, styles.vitalDivider]}>
             <Text style={styles.vitalLabel}>Glicemia</Text>
-            <Text style={styles.vitalValue}>{glucose}</Text>
+            <Text style={styles.vitalValue}>{latestGlucose?.glucose ?? '—'}</Text>
             <Text style={styles.vitalUnit}>mg/dL</Text>
           </View>
 
           <View style={styles.vitalItem}>
             <Text style={styles.vitalLabel}>Remédios</Text>
-            <Text style={[styles.vitalValue, { color: '#86EFAC' }]}>3 de 3</Text>
-            <Text style={styles.vitalUnit}>100% em dia</Text>
+            <Text style={[styles.vitalValue, { color: '#86EFAC' }]}>{user.medications.length}</Text>
+            <Text style={styles.vitalUnit}>cadastrados</Text>
           </View>
         </View>
       </LinearGradient>
@@ -195,7 +201,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         >
           <View style={styles.cardHeader}>
             <Text style={[styles.sectionTitle, { color: dm.sub }]}>
-              Medições em Tempo Real
+              Últimas medições
             </Text>
             <TouchableOpacity
               onPress={() => onNavigate('history')}
@@ -214,7 +220,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               activeOpacity={0.7}
               style={styles.ringItem}
             >
-              <HealthRing
+              {latestPressure ? <HealthRing
                 value={pressSys}
                 max={200}
                 color={systolicColor}
@@ -222,7 +228,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 stroke={7}
                 unit="mmHg"
                 label="Sistólica"
-              />
+              /> : <View style={[styles.emptyRing, { borderColor: dm.border }]}><Text style={[styles.emptyRingText, { color: dm.sub }]}>—</Text></View>}
               <Text style={[styles.ringTitle, { color: dm.text }]}>Pressão</Text>
             </TouchableOpacity>
 
@@ -231,7 +237,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               activeOpacity={0.7}
               style={styles.ringItem}
             >
-              <HealthRing
+              {latestGlucose ? <HealthRing
                 value={glucose}
                 max={250}
                 color={glucoseColor}
@@ -239,7 +245,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 stroke={7}
                 unit="mg/dL"
                 label="Glicose"
-              />
+              /> : <View style={[styles.emptyRing, { borderColor: dm.border }]}><Text style={[styles.emptyRingText, { color: dm.sub }]}>—</Text></View>}
               <Text style={[styles.ringTitle, { color: dm.text }]}>Glicemia</Text>
             </TouchableOpacity>
 
@@ -248,7 +254,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               activeOpacity={0.7}
               style={styles.ringItem}
             >
-              <HealthRing
+              {latestPulse ? <HealthRing
                 value={heartRate}
                 max={150}
                 color={COLORS.secondary}
@@ -256,7 +262,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 stroke={7}
                 unit="bpm"
                 label="Pulso"
-              />
+              /> : <View style={[styles.emptyRing, { borderColor: dm.border }]}><Text style={[styles.emptyRingText, { color: dm.sub }]}>—</Text></View>}
               <Text style={[styles.ringTitle, { color: dm.text }]}>Batimentos</Text>
             </TouchableOpacity>
           </View>
@@ -311,7 +317,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.gridCardSub}>Registrar</Text>
             </TouchableOpacity>
 
-            {/* Por Voz */}
+            {/* Registro por texto */}
             <TouchableOpacity
               onPress={() => onNavigate('voice')}
               activeOpacity={0.7}
@@ -326,9 +332,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   { backgroundColor: `${COLORS.purple}18` },
                 ]}
               >
-                <Mic size={22} color={COLORS.purple} strokeWidth={2.4} />
+                <FileText size={22} color={COLORS.purple} strokeWidth={2.4} />
               </View>
-              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Por Voz</Text>
+              <Text style={[styles.gridCardTitle, { color: dm.text }]}>Por Texto</Text>
               <Text style={styles.gridCardSub}>Falar dados</Text>
             </TouchableOpacity>
 
@@ -371,7 +377,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Users size={22} color="#0F766E" strokeWidth={2.4} />
               </View>
               <Text style={[styles.gridCardTitle, { color: dm.text }]}>Cuidadores</Text>
-              <Text style={styles.gridCardSub}>Rede SUS</Text>
+              <Text style={styles.gridCardSub}>Rede de apoio</Text>
             </TouchableOpacity>
 
             {/* Consultas */}
@@ -392,7 +398,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Calendar size={22} color="#B45309" strokeWidth={2.4} />
               </View>
               <Text style={[styles.gridCardTitle, { color: dm.text }]}>Consultas</Text>
-              <Text style={styles.gridCardSub}>Agendar</Text>
+              <Text style={styles.gridCardSub}>Registrar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -418,7 +424,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <Stethoscope size={18} color={COLORS.primary} />
                 </View>
                 <Text style={[styles.sectionTitle, { color: dm.sub }]}>
-                  Próxima Consulta SUS
+                  Próxima Consulta
                 </Text>
               </View>
               {(() => {
@@ -448,7 +454,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {nextAppt.specialty} • {nextAppt.time}
               </Text>
               <Text style={styles.doctorLocation} numberOfLines={1}>
-                📍 {nextAppt.location || 'Teleconsulta Conecte SUS'}
+                📍 {nextAppt.location || 'Local não informado'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -466,11 +472,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={[styles.sectionTitle, { color: dm.sub }]}>
                 Evolução da Pressão (7 dias)
               </Text>
-              <Text style={styles.chartSub}>Média Sistólica: 127 mmHg</Text>
+              <Text style={styles.chartSub}>{averageSystolic === null ? 'Nenhuma medição registrada' : `Média sistólica: ${averageSystolic} mmHg`}</Text>
             </View>
             <View style={styles.trendBadge}>
               <TrendingUp size={14} color="#16A34A" />
-              <Text style={styles.trendText}>-4 mmHg</Text>
+              <Text style={styles.trendText}>{recentRecords.length} registros</Text>
             </View>
           </View>
 
@@ -686,6 +692,8 @@ const styles = StyleSheet.create({
   ringItem: {
     alignItems: 'center',
   },
+  emptyRing: { width: 82, height: 82, borderRadius: 41, borderWidth: 7, alignItems: 'center', justifyContent: 'center' },
+  emptyRingText: { fontSize: 28, fontWeight: '700' },
   ringTitle: {
     fontSize: 11,
     fontWeight: '700',

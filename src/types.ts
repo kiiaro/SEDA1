@@ -38,12 +38,16 @@ export interface Appointment {
   type: 'presencial' | 'teleconsulta';
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
   location?: string;
+  meetingUrl?: string;
   bookedBy: string;
   notes?: string;
 }
 
 export interface HealthRecord {
   id: string;
+  measurement?: 'pressure' | 'glucose' | 'combined';
+  recordedAt?: string;
+  hasHeartRate?: boolean;
   date: string;
   time: string;
   systolic: number;
@@ -59,7 +63,7 @@ export interface FamilyMember {
   id: string;
   name: string;
   relation: string;
-  role: 'Você' | 'Familiar' | 'SUS';
+  role: 'Você' | 'Familiar' | 'Profissional';
   phone: string;
   avatarBg: string;
   initials: string;

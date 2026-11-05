@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
   Linking,
+  Alert,
 } from 'react-native';
 import {
   Phone,
@@ -23,7 +24,7 @@ import { BackHeader } from '../components/BackHeader';
 
 interface FamilyScreenProps {
   family: FamilyMember[];
-  onAddMember: (member: FamilyMember) => void;
+  onAddMember: (member: FamilyMember) => Promise<void>;
   onBack: () => void;
   dm: DarkModeTheme;
 }
@@ -37,11 +38,13 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRelation, setNewRelation] = useState('Filho(a)');
-  const [newRole, setNewRole] = useState<'Familiar' | 'SUS'>('Familiar');
-  const [newPhone, setNewPhone] = useState('(11) 9');
+  const [newRole, setNewRole] = useState<'Familiar' | 'Profissional'>('Familiar');
+  const [newPhone, setNewPhone] = useState('');
 
-  const handleAddSubmit = () => {
-    if (!newName.trim()) return;
+  const handleAddSubmit = async () => {
+    if (!newName.trim() || newPhone.replace(/\D/g, '').length < 10) {
+      Alert.alert('Dados incompletos', 'Informe nome e telefone com DDD.'); return;
+    }
 
     const initials = newName
       .split(' ')
@@ -55,15 +58,17 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
       relation: newRelation,
       role: newRole,
       phone: newPhone,
-      avatarBg: newRole === 'SUS' ? COLORS.primary : COLORS.accent,
+      avatarBg: newRole === 'Profissional' ? COLORS.primary : COLORS.accent,
       initials: initials || 'CD',
       status: 'online',
       lastSeen: 'Adicionado agora',
     };
 
-    onAddMember(newMember);
-    setShowAddModal(false);
-    setNewName('');
+    try {
+      await onAddMember(newMember);
+      setShowAddModal(false);
+      setNewName(''); setNewPhone('');
+    } catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); }
   };
 
   const handleCall = (phone: string) => {
@@ -82,7 +87,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
     >
       <BackHeader
         title="Rede de Cuidado"
-        subtitle="Familiares, cuidadores e equipe de saúde SUS"
+        subtitle="Contatos cadastrados por você"
         onBack={onBack}
         bgGradient={['#0F766E', '#7CC9BE']}
         rightElement={
@@ -112,7 +117,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
           <Text style={styles.bannerText}>
             Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
             <Text style={{ fontWeight: '800', color: '#0F766E' }}>
-              Familiar / SUS
+              Familiares e profissionais
             </Text>{' '}
             recebem alerta imediato.
           </Text>
@@ -266,7 +271,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
           >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: dm.text }]}>
-                Novo Cuidador / Rede SUS
+                Novo Contato de Apoio
               </Text>
               <TouchableOpacity
                 onPress={() => setShowAddModal(false)}
@@ -341,19 +346,19 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      onPress={() => setNewRole('SUS')}
+                      onPress={() => setNewRole('Profissional')}
                       style={[
                         styles.roleToggleBtn,
-                        newRole === 'SUS' && { backgroundColor: COLORS.primary },
+                        newRole === 'Profissional' && { backgroundColor: COLORS.primary },
                       ]}
                     >
                       <Text
                         style={[
                           styles.roleToggleText,
-                          { color: newRole === 'SUS' ? '#FFFFFF' : dm.sub },
+                          { color: newRole === 'Profissional' ? '#FFFFFF' : dm.sub },
                         ]}
                       >
-                        SUS
+                        Profissional
                       </Text>
                     </TouchableOpacity>
                   </View>

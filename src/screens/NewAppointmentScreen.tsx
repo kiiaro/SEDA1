@@ -14,12 +14,13 @@ import {
   Check,
   ArrowRight,
 } from 'lucide-react-native';
-import { COLORS, HEALTH_LOCATIONS, SPECIALTIES } from '../constants/theme';
+import { COLORS, SPECIALTIES } from '../constants/theme';
 import { Appointment, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
 
 interface NewAppointmentScreenProps {
-  onSaveAppointment: (appt: Appointment) => void;
+  onSaveAppointment: (appt: Appointment) => Promise<void>;
+  userName: string;
   onNavigate: (screen: Screen) => void;
   onBack: () => void;
   dm: DarkModeTheme;
@@ -27,28 +28,39 @@ interface NewAppointmentScreenProps {
 
 export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
   onSaveAppointment,
+  userName,
   onNavigate,
   onBack,
   dm,
 }) => {
   const [bookedBy, setBookedBy] = useState<'Paciente' | 'Familiar'>('Paciente');
   const [type, setType] = useState<'presencial' | 'teleconsulta'>('presencial');
-  const [doctor, setDoctor] = useState('Dr. Marcelo Antunes');
-  const [specialty, setSpecialty] = useState('Cardiologia SUS');
-  const [selectedLocation, setSelectedLocation] = useState(HEALTH_LOCATIONS[0].name);
-  const [date, setDate] = useState('2026-09-12');
-  const [time, setTime] = useState('10:00');
+  const [doctor, setDoctor] = useState('');
+  const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [meetingUrl, setMeetingUrl] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!doctor.trim()) {
       setErrorMessage('Informe o nome do médico ou especialista.');
       return;
     }
-    if (!date) {
-      setErrorMessage('Selecione a data da consulta.');
+    const parsedDate = new Date(`${date}T00:00:00`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsedDate.getTime()) || parsedDate.toLocaleDateString('sv-SE') !== date || date < new Date().toLocaleDateString('sv-SE')) {
+      setErrorMessage('Informe uma data válida a partir de hoje (AAAA-MM-DD).');
       return;
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      setErrorMessage('Informe um horário válido (HH:MM).');
+      return;
+    }
+    if (type === 'teleconsulta' && meetingUrl.trim() && !/^https:\/\/[^\s]+$/i.test(meetingUrl.trim())) {
+      setErrorMessage('O link da teleconsulta deve começar com https://.'); return;
     }
 
     setErrorMessage('');
@@ -61,13 +73,16 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
       time: time,
       type: type,
       status: 'pending',
-      location: type === 'presencial' ? selectedLocation : 'Teleconsulta Conecte SUS',
-      bookedBy: bookedBy === 'Paciente' ? 'Antônio Carlos Silva' : 'Ana Silva (Familiar / Cuidadora)',
-      notes: notes.trim() || 'Acompanhamento preventivo periódico.',
+      location: type === 'presencial' ? selectedLocation.trim() : 'Teleconsulta',
+      meetingUrl: type === 'teleconsulta' ? meetingUrl.trim() : undefined,
+      bookedBy: bookedBy === 'Paciente' ? userName : 'Familiar / Cuidador',
+      notes: notes.trim(),
     };
 
-    onSaveAppointment(newAppt);
-    onNavigate('appointments');
+    setSaving(true);
+    try { await onSaveAppointment(newAppt); onNavigate('appointments'); }
+    catch (error) { setErrorMessage(error instanceof Error ? error.message : 'Não foi possível salvar a consulta.'); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -77,8 +92,8 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
       showsVerticalScrollIndicator={false}
     >
       <BackHeader
-        title="Agendar Consulta SUS"
-        subtitle="Preencha os dados do atendimento"
+        title="Registrar Consulta"
+        subtitle="Guarde aqui os dados de uma consulta já marcada"
         onBack={onBack}
         bgGradient={['#1E3A5F', '#3D6E9F']}
       />
@@ -266,7 +281,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
           </View>
         </View>
 
-        {/* 5. Local */}
+        {/* 5. Local ou link */}
         {type === 'presencial' && (
           <View
             style={[
@@ -275,37 +290,15 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
             ]}
           >
             <Text style={[styles.sectionTitle, { color: dm.sub }]}>
-              5. Unidade de Saúde (UBS / AME)
+              5. Local da Consulta
             </Text>
-            <View style={styles.locationsList}>
-              {HEALTH_LOCATIONS.map((loc) => {
-                const isSelected = selectedLocation === loc.name;
-                return (
-                  <TouchableOpacity
-                    key={loc.id}
-                    onPress={() => setSelectedLocation(loc.name)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.locationItem,
-                      {
-                        backgroundColor: isSelected ? `${COLORS.primary}12` : dm.inputBg,
-                        borderColor: isSelected ? COLORS.primary : dm.border,
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.locName, { color: dm.text }]}>
-                        {loc.name}
-                      </Text>
-                      <Text style={styles.locAddr}>{loc.address}</Text>
-                    </View>
-                    {isSelected && <Check size={16} color={COLORS.primary} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <TextInput value={selectedLocation} onChangeText={setSelectedLocation} placeholder="Nome da unidade ou endereço" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
           </View>
         )}
+        {type === 'teleconsulta' && <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
+          <Text style={[styles.sectionTitle, { color: dm.sub }]}>5. Link da Teleconsulta (opcional)</Text>
+          <TextInput value={meetingUrl} onChangeText={setMeetingUrl} placeholder="https://..." autoCapitalize="none" keyboardType="url" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
+        </View>}
 
         {/* 6. Data & Hora */}
         <View
@@ -323,7 +316,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
               <TextInput
                 value={date}
                 onChangeText={setDate}
-                placeholder="2026-09-12"
+                placeholder="AAAA-MM-DD"
                 placeholderTextColor={dm.sub}
                 style={[
                   styles.input,
@@ -341,7 +334,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
               <TextInput
                 value={time}
                 onChangeText={setTime}
-                placeholder="10:00"
+                placeholder="HH:MM"
                 placeholderTextColor={dm.sub}
                 style={[
                   styles.input,
@@ -359,10 +352,11 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
         {/* Confirm Button */}
         <TouchableOpacity
           onPress={handleSave}
+          disabled={saving}
           activeOpacity={0.85}
           style={[styles.submitBtn, { backgroundColor: COLORS.primary }]}
         >
-          <Text style={styles.submitBtnText}>Confirmar Agendamento</Text>
+          <Text style={styles.submitBtnText}>{saving ? 'Salvando...' : 'Salvar Consulta'}</Text>
           <ArrowRight size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>

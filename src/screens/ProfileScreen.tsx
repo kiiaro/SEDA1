@@ -64,7 +64,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
 
         <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userSus}>Cartão SUS: {user.susCard}</Text>
+        {user.susCard ? <Text style={styles.userSus}>Cartão SUS: {user.susCard}</Text> : null}
       </LinearGradient>
 
       {/* Main Content */}

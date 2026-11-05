@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
 import { Utensils, Clock, CheckCircle2 } from 'lucide-react-native';
@@ -18,7 +19,7 @@ import { Stepper } from '../components/Stepper';
 interface GlucoseScreenProps {
   glucose: number;
   setGlucose: (val: number) => void;
-  onSaveRecord: (record: Partial<HealthRecord>) => void;
+  onSaveRecord: (record: Partial<HealthRecord>) => Promise<void>;
   records: HealthRecord[];
   onBack: () => void;
   dm: DarkModeTheme;
@@ -39,40 +40,40 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   const [isSaved, setIsSaved] = useState(false);
 
   const getGlucoseStatus = (val: number) => {
-    if (val > 126) {
+    if (val > (mealContext === 'before' ? 130 : 180)) {
       return {
         level: 'danger',
-        label: '⬆️ Hiperglicemia (Alta)',
+        label: '⬆️ Leitura elevada',
         color: COLORS.danger,
-        desc: 'Taxa acima da meta em jejum/pré-refeição. Beba água e evite carboidratos rápidos.',
+        desc: 'As metas variam conforme o momento da refeição e seu plano de cuidado.',
       };
     }
     if (val < 70) {
       return {
         level: 'warn',
-        label: '⬇️ Hipoglicemia (Baixa)',
+        label: '⬇️ Leitura baixa',
         color: COLORS.primary,
-        desc: 'Atenção com sintomas de tontura e suor frio. Consuma um carboidrato rápido se indicado.',
+        desc: 'Uma leitura abaixo de 70 mg/dL precisa de atenção. Siga seu plano de cuidado.',
       };
     }
     return {
       level: 'normal',
-      label: 'Normal / Alvo Atingido',
+      label: 'Medição registrada',
       color: COLORS.accent,
-      desc: 'Excelente! Sua glicemia está na faixa esperada para seu perfil de tratamento.',
+      desc: 'Compare com a meta definida pela sua equipe de saúde.',
     };
   };
 
   const status = getGlucoseStatus(glucose);
 
-  const handleSave = () => {
-    setIsSaved(true);
-    onSaveRecord({
+  const handleSave = async () => {
+    try { await onSaveRecord({
       glucose: glucose,
       mealContext: mealContext,
       time: timeStr,
       status: status.level as 'normal' | 'warn' | 'danger',
-    });
+    }); setIsSaved(true); }
+    catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
 
     setTimeout(() => {
       setIsSaved(false);
@@ -80,7 +81,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   };
 
   // SVG Chart calculation for 7 days
-  const recentRecords = [...records].slice(0, 7).reverse();
+  const recentRecords = records.filter((r) => r.measurement !== 'pressure').slice(0, 7).reverse();
   const chartWidth = 300;
   const chartHeight = 100;
   const minVal = 60;
@@ -274,7 +275,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
             <Text style={[styles.chartTitle, { color: dm.sub }]}>
               Curva Glicêmica (7 Dias)
             </Text>
-            <Text style={styles.chartTarget}>Meta: &lt; 126 mg/dL</Text>
+            <Text style={styles.chartTarget}>Histórico das medições</Text>
           </View>
 
           <View style={styles.chartArea}>
