@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
@@ -11,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Heart, ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen } from '../types';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => Promise<void>;

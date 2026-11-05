@@ -1,8 +1,9 @@
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PhoneCall, Users } from 'lucide-react-native';
 import { BackHeader } from '../components/BackHeader';
 import { DarkModeTheme, FamilyMember } from '../types';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface Props {
   family: FamilyMember[];

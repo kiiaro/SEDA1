@@ -1,0 +1,46 @@
+name: Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - codex/seda1-supabase-design
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CI: '1'
+      EXPO_PUBLIC_SUPABASE_URL: https://uoeldnpgahsfbofkfuru.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_cPjzTfThJC4Y5MOBLSqEgg_JS3P1xLz
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Build installable APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: seda1-android-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14

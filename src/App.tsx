@@ -19,6 +19,7 @@ import { supabase } from './lib/supabase';
 import { deleteItem, insertItem, loadSedaData, saveProfile, updateItem } from './lib/data';
 import { MobileShell } from './components/MobileShell';
 import { NavBar } from './components/NavBar';
+import { ScreenEntrance } from './components/Motion';
 
 // Screens
 import { SplashScreen } from './screens/SplashScreen';
@@ -46,6 +47,7 @@ export default function App() {
   const [isSimulatorMode, setIsSimulatorMode] = useState<boolean>(false);
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // User Profile & Data
   const [user, setUser] = useState<UserProfile>({
@@ -132,6 +134,21 @@ export default function App() {
     setAuthNotice('');
     setRecords([]); setAppointments([]); setFamily([]); setAlerts([]);
     setScreen('login');
+  };
+
+  const handleRefresh = async () => {
+    if (!sessionUserId) return;
+    setRefreshing(true);
+    try {
+      const data = await loadSedaData(sessionUserId);
+      if (data.profile) setUser(data.profile);
+      setRecords(data.records);
+      setAppointments(data.appointments);
+      setFamily(data.family);
+      setAlerts(data.alerts);
+    } catch (error) {
+      Alert.alert('Não foi possível atualizar', error instanceof Error ? error.message : 'Tente novamente.');
+    } finally { setRefreshing(false); }
   };
 
   // Appearance & Accessibility Settings
@@ -254,7 +271,7 @@ export default function App() {
         isSimulatorMode={isSimulatorMode}
         onToggleSimulator={() => setIsSimulatorMode(!isSimulatorMode)}
       >
-        <View style={styles.screenContainer}>
+        <ScreenEntrance key={screen} style={styles.screenContainer}>
           {screen === 'splash' && (
             <SplashScreen onFinish={() => {}} />
           )}
@@ -301,6 +318,8 @@ export default function App() {
               }}
               dm={dm}
               unreadAlertsCount={alerts.length}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
             />
           )}
 
@@ -423,7 +442,7 @@ export default function App() {
               dm={dm}
             />
           )}
-        </View>
+        </ScreenEntrance>
 
         {/* Persistent Accessible NavBar for Main Screens */}
         {showNavBar && (

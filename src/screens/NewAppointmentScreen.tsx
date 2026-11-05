@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
@@ -17,6 +16,7 @@ import {
 import { COLORS, SPECIALTIES } from '../constants/theme';
 import { Appointment, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface NewAppointmentScreenProps {
   onSaveAppointment: (appt: Appointment) => Promise<void>;

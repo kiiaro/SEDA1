@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
@@ -11,6 +10,7 @@ import { ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, UserProfile } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface RegisterScreenProps {
   onRegisterComplete: (email: string, password: string, profile: UserProfile) => Promise<void>;

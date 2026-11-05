@@ -2,9 +2,9 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
@@ -24,6 +24,7 @@ import {
 import { COLORS } from '../constants/theme';
 import { Appointment, DarkModeTheme, HealthRecord, Screen, UserProfile } from '../types';
 import { HealthRing } from '../components/HealthRing';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface HomeScreenProps {
   user: UserProfile;
@@ -36,6 +37,8 @@ interface HomeScreenProps {
   onNavigate: (screen: Screen) => void;
   dm: DarkModeTheme;
   unreadAlertsCount: number;
+  refreshing: boolean;
+  onRefresh: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -49,6 +52,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigate,
   dm,
   unreadAlertsCount,
+  refreshing,
+  onRefresh,
 }) => {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -127,6 +132,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
     >
       {/* Header Gradient */}
       <LinearGradient
