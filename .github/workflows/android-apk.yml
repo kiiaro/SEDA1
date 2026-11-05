@@ -36,7 +36,15 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew :app:assembleRelease --no-daemon
+          sed -i 's#services.gradle.org/distributions#downloads.gradle.org/distributions#' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/networkTimeout=10000/networkTimeout=60000/' gradle/wrapper/gradle-wrapper.properties
+          for attempt in 1 2 3; do
+            if ./gradlew :app:assembleRelease --no-daemon; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep 20; fi
+          done
+          exit 1
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
