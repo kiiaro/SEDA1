@@ -53,7 +53,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               Nenhum alerta pendente
             </Text>
             <Text style={[styles.emptyDesc, { color: dm.sub }]}>
-              Todas as suas medicações e medições estão 100% em dia.
+              Você ainda não tem alertas pendentes.
             </Text>
           </View>
         ) : (

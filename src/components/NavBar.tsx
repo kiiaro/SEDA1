@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { MotionButton as TouchableOpacity } from './Motion';
 import { Home, History, Bell, Users, User } from 'lucide-react-native';
 import { DarkModeTheme, Screen } from '../types';
 import { COLORS } from '../constants/theme';

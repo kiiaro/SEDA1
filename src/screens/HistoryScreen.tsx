@@ -27,6 +27,9 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
     { id: '30d', label: '30 dias' },
     { id: '3m', label: '3 meses' },
   ];
+  const days = { '7d': 7, '15d': 15, '30d': 30, '3m': 90 }[filterPeriod];
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const visibleRecords = records.filter((rec) => rec.recordedAt && new Date(rec.recordedAt).getTime() >= cutoff);
 
   return (
     <ScrollView
@@ -88,7 +91,8 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
 
       {/* Records List */}
       <View style={styles.recordsList}>
-        {records.map((rec) => (
+        {visibleRecords.length === 0 && <View style={[styles.recordCard, { backgroundColor: dm.card, borderColor: dm.border }]}><Text style={[styles.recordDate, { color: dm.text }]}>Nenhuma medição neste período</Text><Text style={[styles.recordTime, { color: dm.sub }]}>Registre uma medição para acompanhar seu histórico.</Text></View>}
+        {visibleRecords.map((rec) => (
           <View
             key={rec.id}
             style={[
@@ -113,7 +117,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
             {/* 3 Metric Mini Cards */}
             <View style={styles.metricsRow}>
               {/* Pressão */}
-              <View style={[styles.metricBox, styles.pressBox]}>
+              {rec.measurement !== 'glucose' && <View style={[styles.metricBox, styles.pressBox]}>
                 <View style={styles.metricLabelRow}>
                   <HeartPulse size={12} color="#0369A1" />
                   <Text style={styles.pressLabel}>Pressão</Text>
@@ -122,27 +126,27 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
                   {rec.systolic}/{rec.diastolic}
                 </Text>
                 <Text style={styles.metricUnit}>mmHg</Text>
-              </View>
+              </View>}
 
               {/* Glicemia */}
-              <View style={[styles.metricBox, styles.glucBox]}>
+              {rec.measurement !== 'pressure' && <View style={[styles.metricBox, styles.glucBox]}>
                 <View style={styles.metricLabelRow}>
                   <Droplets size={12} color="#B45309" />
                   <Text style={styles.glucLabel}>Glicose</Text>
                 </View>
                 <Text style={styles.glucVal}>{rec.glucose}</Text>
                 <Text style={styles.metricUnit}>mg/dL</Text>
-              </View>
+              </View>}
 
               {/* Pulso */}
-              <View style={[styles.metricBox, styles.pulseBox]}>
+              {rec.measurement !== 'glucose' && rec.hasHeartRate && <View style={[styles.metricBox, styles.pulseBox]}>
                 <View style={styles.metricLabelRow}>
                   <Activity size={12} color="#047857" />
                   <Text style={styles.pulseLabel}>Pulso</Text>
                 </View>
                 <Text style={styles.pulseVal}>{rec.heartRate}</Text>
                 <Text style={styles.metricUnit}>bpm</Text>
-              </View>
+              </View>}
             </View>
 
             {/* Notes */}

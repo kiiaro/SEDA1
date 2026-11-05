@@ -36,7 +36,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         <View style={styles.headerRow}>
           <View style={styles.susBadge}>
             <ShieldCheck size={14} color="#FFFFFF" />
-            <Text style={styles.susBadgeText}>Integrado ao SUS</Text>
+            <Text style={styles.susBadgeText}>Seu diário de saúde</Text>
           </View>
           <Text style={styles.versionText}>v2.4 Expo Native</Text>
         </View>

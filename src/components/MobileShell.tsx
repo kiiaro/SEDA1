@@ -4,6 +4,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { DarkModeTheme } from '../types';
@@ -22,13 +23,15 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   onToggleSimulator,
 }) => {
   const isWeb = Platform.OS === 'web';
+  const { width } = useWindowDimensions();
+  const isDesktopPreview = isWeb && width > 560;
 
   return (
     <SafeAreaView
       style={[
         styles.safeArea,
         {
-          backgroundColor: dm.bg,
+          backgroundColor: isDesktopPreview ? (dm.isDark ? '#0B1220' : '#EAF1F8') : dm.bg,
         },
       ]}
     >
@@ -39,7 +42,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         style={[
           styles.container,
           {
-            backgroundColor: dm.bg,
+            backgroundColor: isDesktopPreview ? (dm.isDark ? '#0B1220' : '#EAF1F8') : dm.bg,
           },
         ]}
       >
@@ -47,7 +50,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         <View
           style={[
             styles.viewport,
-            isWeb && isSimulatorMode ? styles.viewportSimulated : styles.viewportFull,
+            isWeb && isSimulatorMode ? styles.viewportSimulated : isDesktopPreview ? styles.viewportDesktop : styles.viewportFull,
             {
               backgroundColor: dm.bg,
               borderColor: dm.border,
@@ -88,6 +91,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.35,
     shadowRadius: 28,
+  },
+  viewportDesktop: {
+    maxWidth: 500,
+    borderRadius: 24,
+    borderWidth: 1,
+    elevation: 8,
+    shadowColor: '#1E3A5F',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
   },
   viewportFull: {
     maxWidth: '100%',

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import Svg, { Path, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
 import { Heart, Activity, CheckCircle2, AlertTriangle, FileText } from 'lucide-react-native';
@@ -21,7 +22,7 @@ interface PressureScreenProps {
   setPressDia: (val: number) => void;
   heartRate: number;
   setHeartRate: (val: number) => void;
-  onSaveRecord: (record: Partial<HealthRecord>) => void;
+  onSaveRecord: (record: Partial<HealthRecord>) => Promise<void>;
   records: HealthRecord[];
   onBack: () => void;
   dm: DarkModeTheme;
@@ -49,8 +50,8 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
       return {
         level: 'danger',
         color: COLORS.danger,
-        title: 'Pressão Elevada (Hipertensão)',
-        desc: 'Recomenda-se repousar sentado por 15 minutos e realizar nova aferição.',
+        title: 'Leitura de pressão elevada',
+        desc: 'Uma medição isolada não define diagnóstico. Confirme a leitura e converse com sua equipe de saúde.',
         icon: AlertTriangle,
       };
     }
@@ -58,16 +59,16 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
       return {
         level: 'warn',
         color: COLORS.warn,
-        title: 'Pressão Limítrofe / Atenção',
-        desc: 'Valores levemente aumentados. Monitore a ingestão de sal e líquidos.',
+        title: 'Leitura que merece atenção',
+        desc: 'Acompanhe as próximas medições e converse com sua equipe de saúde.',
         icon: AlertTriangle,
       };
     }
     return {
       level: 'normal',
       color: COLORS.success,
-      title: 'Pressão Ótima / Controlada',
-      desc: 'Excelente! Sua pressão arterial está dentro da meta saudável.',
+      title: 'Medição registrada',
+      desc: 'As metas individuais devem ser definidas com sua equipe de saúde.',
       icon: Heart,
     };
   };
@@ -81,15 +82,15 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
       ? ['#D97706', '#F4B740']
       : ['#1E3A5F', '#3D6E9F'];
 
-  const handleSave = () => {
-    setIsSaved(true);
-    onSaveRecord({
+  const handleSave = async () => {
+    try { await onSaveRecord({
       systolic: pressSys,
       diastolic: pressDia,
       heartRate: heartRate,
       notes: notes,
       status: status.level as 'normal' | 'warn' | 'danger',
-    });
+    }); setIsSaved(true); }
+    catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
 
     setTimeout(() => {
       setIsSaved(false);
@@ -97,7 +98,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
   };
 
   // SVG Chart calculation for 7 days
-  const recentRecords = [...records].slice(0, 7).reverse();
+  const recentRecords = records.filter((r) => r.measurement !== 'glucose').slice(0, 7).reverse();
   const chartWidth = 300;
   const chartHeight = 110;
   const minVal = 50;
