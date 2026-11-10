@@ -45,6 +45,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
 }) => {
   const [notes, setNotes] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { scrollRef, keepInputVisible } = useInputVisibility();
 
   const getStatusInfo = (sys: number, dia: number) => {
@@ -85,18 +86,23 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
       : ['#1E3A5F', '#3D6E9F'];
 
   const handleSave = async () => {
-    try { await onSaveRecord({
-      systolic: pressSys,
-      diastolic: pressDia,
-      heartRate: heartRate,
-      notes: notes,
-      status: status.level as 'normal' | 'warn' | 'danger',
-    }); setIsSaved(true); }
-    catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
-
-    setTimeout(() => {
-      setIsSaved(false);
-    }, 2200);
+    if (isSaving || isSaved) return;
+    setIsSaving(true);
+    try {
+      await onSaveRecord({
+        systolic: pressSys,
+        diastolic: pressDia,
+        heartRate,
+        notes,
+        status: status.level as 'normal' | 'warn' | 'danger',
+      });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2200);
+    } catch (error) {
+      Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // SVG Chart calculation for 7 days
@@ -244,7 +250,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
         {/* Save Button */}
         <TouchableOpacity
           onPress={handleSave}
-          disabled={isSaved}
+          disabled={isSaving || isSaved}
           activeOpacity={0.8}
           style={[
             styles.saveBtn,
@@ -257,7 +263,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
               <Text style={styles.saveBtnText}>✓ Salvo com sucesso!</Text>
             </>
           ) : (
-            <Text style={styles.saveBtnText}>Salvar Registro de Pressão</Text>
+            <Text style={styles.saveBtnText}>{isSaving ? 'Salvando...' : 'Salvar Registro de Pressão'}</Text>
           )}
         </TouchableOpacity>
 

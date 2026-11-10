@@ -279,7 +279,7 @@ export default function App() {
       >
         <ScreenEntrance key={screen} style={styles.screenContainer}>
           {screen === 'splash' && (
-            <SplashScreen onFinish={() => {}} />
+            <SplashScreen />
           )}
 
           {screen === 'onboarding' && (

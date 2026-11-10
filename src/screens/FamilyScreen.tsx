@@ -78,11 +78,15 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
   };
 
   const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`);
+    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`)
+      .catch(() => Alert.alert('Ligação indisponível', 'Use o telefone para ligar para este contato.'));
   };
 
   const handleWhatsApp = (phone: string) => {
-    Linking.openURL(`https://wa.me/55${phone.replace(/\D/g, '')}`);
+    const digits = phone.replace(/\D/g, '');
+    const international = digits.startsWith('55') && digits.length >= 12 ? digits : `55${digits}`;
+    Linking.openURL(`https://wa.me/${international}`)
+      .catch(() => Alert.alert('WhatsApp indisponível', 'Confira o número cadastrado.'));
   };
 
   return (

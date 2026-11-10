@@ -37,8 +37,12 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   fontSizeScale,
 }) => {
   const [mealContext, setMealContext] = useState<'before' | 'after'>('before');
-  const [timeStr, setTimeStr] = useState('07:45');
+  const [timeStr, setTimeStr] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { scrollRef, keepInputVisible } = useInputVisibility();
 
   const getGlucoseStatus = (val: number) => {
@@ -69,17 +73,26 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   const status = getGlucoseStatus(glucose);
 
   const handleSave = async () => {
-    try { await onSaveRecord({
-      glucose: glucose,
-      mealContext: mealContext,
-      time: timeStr,
-      status: status.level as 'normal' | 'warn' | 'danger',
-    }); setIsSaved(true); }
-    catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
-
-    setTimeout(() => {
-      setIsSaved(false);
-    }, 2200);
+    if (isSaving || isSaved) return;
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(timeStr)) {
+      Alert.alert('Horário inválido', 'Informe o horário no formato HH:MM.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSaveRecord({
+        glucose,
+        mealContext,
+        time: timeStr,
+        status: status.level as 'normal' | 'warn' | 'danger',
+      });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2200);
+    } catch (error) {
+      Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // SVG Chart calculation for 7 days
@@ -236,6 +249,8 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
                 value={timeStr}
                 onChangeText={setTimeStr}
                 onFocus={keepInputVisible}
+                placeholder="HH:MM"
+                placeholderTextColor={dm.sub}
                 style={[
                   styles.timeInput,
                   {
@@ -252,7 +267,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
         {/* Save Button */}
         <TouchableOpacity
           onPress={handleSave}
-          disabled={isSaved}
+          disabled={isSaving || isSaved}
           activeOpacity={0.8}
           style={[
             styles.saveBtn,
@@ -265,7 +280,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
               <Text style={styles.saveBtnText}>✓ Salvo com sucesso!</Text>
             </>
           ) : (
-            <Text style={styles.saveBtnText}>Salvar Registro de Glicose</Text>
+            <Text style={styles.saveBtnText}>{isSaving ? 'Salvando...' : 'Salvar Registro de Glicose'}</Text>
           )}
         </TouchableOpacity>
 

@@ -341,7 +341,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <FileText size={22} color={COLORS.purple} strokeWidth={2.4} />
               </View>
               <Text style={[styles.gridCardTitle, { color: dm.text }]}>Por Texto</Text>
-              <Text style={styles.gridCardSub}>Falar dados</Text>
+              <Text style={styles.gridCardSub}>Descrever dados</Text>
             </TouchableOpacity>
 
             {/* Gráficos */}
