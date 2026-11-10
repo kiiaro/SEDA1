@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   ScrollView,
+  Keyboard,
+  useWindowDimensions,
 } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, UserProfile } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface RegisterScreenProps {
   onRegisterComplete: (email: string, password: string, profile: UserProfile) => Promise<void>;
@@ -33,13 +36,29 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const { scrollRef, keepInputVisible } = useInputVisibility();
+  const emailRef = useRef<TextInput>(null);
+  const cpfRef = useRef<TextInput>(null);
+  const birthDateRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+
+  const showError = (message: string) => {
+    setErrorMessage(message);
+    Keyboard.dismiss();
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   const handleRegister = async () => {
     if (!name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setErrorMessage('Informe seu nome e um e-mail válido.'); return;
+      showError('Informe seu nome e um e-mail válido.'); return;
     }
     if (password.length < 8 || password !== confirmPassword) {
-      setErrorMessage('Use uma senha de ao menos 8 caracteres e confirme-a.'); return;
+      showError('Use uma senha de ao menos 8 caracteres e confirme-a.'); return;
     }
     setBusy(true);
     setErrorMessage('');
@@ -50,7 +69,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       conditions: [], medications: [],
     };
     try { await onRegisterComplete(email.trim().toLowerCase(), password, profile); }
-    catch (error) { setErrorMessage(error instanceof Error ? error.message : 'Não foi possível criar a conta.'); }
+    catch (error) { showError(error instanceof Error ? error.message : 'Não foi possível criar a conta.'); }
     finally { setBusy(false); }
   };
 
@@ -69,15 +88,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.formScroll}
-        contentContainerStyle={styles.formContent}
+        contentContainerStyle={[styles.formContent, compact && styles.formContentCompact]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {errorMessage ? <Text style={[styles.errorText, { backgroundColor: dm.card, borderColor: dm.border }]}>{errorMessage}</Text> : null}
         {/* User Type Toggle */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: dm.sub }]}>Tipo de Perfil</Text>
-          <View style={styles.typeRow}>
+          <View style={[styles.typeRow, compact && styles.typeRowCompact]}>
             {userTypes.map((type) => {
               const isSelected = userType === type;
               return (
@@ -87,6 +108,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                   activeOpacity={0.7}
                   style={[
                     styles.typeBtn,
+                    compact && styles.typeBtnCompact,
                     {
                       backgroundColor: isSelected ? `${COLORS.primary}18` : dm.card,
                       borderColor: isSelected ? COLORS.primary : dm.border,
@@ -116,6 +138,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           <TextInput
             value={name}
             onChangeText={setName}
+            onFocus={keepInputVisible}
+            autoComplete="name"
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
             style={[
               styles.input,
               { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
@@ -125,16 +151,20 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
         <View style={styles.section}>
           <Text style={[styles.label, { color: dm.sub }]}>E-mail</Text>
-          <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="voce@exemplo.com" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.card, borderColor: dm.border, color: dm.text }]} />
+          <TextInput ref={emailRef} value={email} onChangeText={setEmail} onFocus={keepInputVisible} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" returnKeyType="next" onSubmitEditing={() => cpfRef.current?.focus()} placeholder="voce@exemplo.com" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.card, borderColor: dm.border, color: dm.text }]} />
         </View>
 
-        <View style={styles.row}>
+        <View style={[styles.row, compact && styles.rowCompact]}>
           <View style={[styles.section, { flex: 1 }]}>
             <Text style={[styles.label, { color: dm.sub }]}>CPF</Text>
             <TextInput
+              ref={cpfRef}
               value={cpf}
               onChangeText={setCpf}
+              onFocus={keepInputVisible}
               keyboardType="numeric"
+              returnKeyType="next"
+              onSubmitEditing={() => birthDateRef.current?.focus()}
               placeholder="Opcional"
               placeholderTextColor={dm.sub}
               style={[
@@ -147,8 +177,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           <View style={[styles.section, { flex: 1 }]}>
             <Text style={[styles.label, { color: dm.sub }]}>Nascimento</Text>
             <TextInput
+              ref={birthDateRef}
               value={birthDate}
               onChangeText={setBirthDate}
+              onFocus={keepInputVisible}
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
               placeholder="DD/MM/AAAA"
               placeholderTextColor={dm.sub}
               style={[
@@ -162,9 +196,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         <View style={styles.section}>
           <Text style={[styles.label, { color: dm.sub }]}>Telefone / WhatsApp</Text>
           <TextInput
+            ref={phoneRef}
             value={phone}
             onChangeText={setPhone}
+            onFocus={keepInputVisible}
             keyboardType="phone-pad"
+            autoComplete="tel"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             placeholder="Opcional"
             placeholderTextColor={dm.sub}
             style={[
@@ -174,13 +213,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           />
         </View>
 
-        <View style={styles.row}>
+        <View style={[styles.row, compact && styles.rowCompact]}>
           <View style={[styles.section, { flex: 1 }]}>
-            <Text style={[styles.label, { color: dm.sub }]}>Senha</Text>
+            <View style={styles.passwordLabelRow}>
+              <Text style={[styles.label, { color: dm.sub }]}>Senha</Text>
+              <TouchableOpacity onPress={() => setShowPasswords((value) => !value)} accessibilityRole="button" accessibilityLabel={showPasswords ? 'Ocultar senhas' : 'Mostrar senhas'}>
+                <Text style={[styles.showPassword, { color: COLORS.primary }]}>{showPasswords ? 'Ocultar' : 'Mostrar'}</Text>
+              </TouchableOpacity>
+            </View>
             <TextInput
+              ref={passwordRef}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              onFocus={keepInputVisible}
+              secureTextEntry={!showPasswords}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
               style={[
                 styles.input,
                 { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
@@ -191,9 +241,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           <View style={[styles.section, { flex: 1 }]}>
             <Text style={[styles.label, { color: dm.sub }]}>Confirmar</Text>
             <TextInput
+              ref={confirmPasswordRef}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              onFocus={keepInputVisible}
+              secureTextEntry={!showPasswords}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
               style={[
                 styles.input,
                 { backgroundColor: dm.card, borderColor: dm.border, color: dm.text },
@@ -227,8 +283,10 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 20,
+    paddingBottom: 36,
     gap: 14,
   },
+  formContentCompact: { paddingHorizontal: 16 },
   section: {
     gap: 6,
   },
@@ -236,6 +294,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  rowCompact: { flexDirection: 'column' },
+  passwordLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  showPassword: { fontSize: 12, fontWeight: '800' },
   label: {
     fontSize: 11,
     fontWeight: '700',
@@ -246,6 +307,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  typeRowCompact: { flexWrap: 'wrap' },
   typeBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -254,6 +316,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  typeBtnCompact: { flexBasis: '46%' },
   typeBtnText: {
     fontSize: 12,
   },

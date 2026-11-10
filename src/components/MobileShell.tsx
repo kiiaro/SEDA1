@@ -2,10 +2,11 @@ import React from 'react';
 import {
   View,
   StyleSheet,
-  SafeAreaView,
+  KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { DarkModeTheme } from '../types';
 
@@ -57,8 +58,12 @@ export const MobileShell: React.FC<MobileShellProps> = ({
             },
           ]}
         >
-          {/* Children View */}
-          <View style={styles.content}>{children}</View>
+          <KeyboardAvoidingView
+            behavior={isWeb ? undefined : 'padding'}
+            style={styles.content}
+          >
+            {children}
+          </KeyboardAvoidingView>
         </View>
       </View>
 

@@ -15,6 +15,7 @@ import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { HealthRing } from '../components/HealthRing';
 import { Stepper } from '../components/Stepper';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface GlucoseScreenProps {
   glucose: number;
@@ -38,6 +39,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   const [mealContext, setMealContext] = useState<'before' | 'after'>('before');
   const [timeStr, setTimeStr] = useState('07:45');
   const [isSaved, setIsSaved] = useState(false);
+  const { scrollRef, keepInputVisible } = useInputVisibility();
 
   const getGlucoseStatus = (val: number) => {
     if (val > (mealContext === 'before' ? 130 : 180)) {
@@ -104,9 +106,11 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <BackHeader
         title="Glicemia Capilar"
@@ -231,6 +235,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
               <TextInput
                 value={timeStr}
                 onChangeText={setTimeStr}
+                onFocus={keepInputVisible}
                 style={[
                   styles.timeInput,
                   {

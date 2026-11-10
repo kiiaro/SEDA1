@@ -5,6 +5,8 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
+  useWindowDimensions,
+  Keyboard,
 } from 'react-native';
 import {
   AlertTriangle,
@@ -17,6 +19,7 @@ import { COLORS, SPECIALTIES } from '../constants/theme';
 import { Appointment, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface NewAppointmentScreenProps {
   onSaveAppointment: (appt: Appointment) => Promise<void>;
@@ -44,23 +47,31 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
   const [notes, setNotes] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const { width } = useWindowDimensions();
+  const { scrollRef, keepInputVisible } = useInputVisibility();
+
+  const showError = (message: string) => {
+    setErrorMessage(message);
+    Keyboard.dismiss();
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   const handleSave = async () => {
     if (!doctor.trim()) {
-      setErrorMessage('Informe o nome do médico ou especialista.');
+      showError('Informe o nome do médico ou especialista.');
       return;
     }
     const parsedDate = new Date(`${date}T00:00:00`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsedDate.getTime()) || parsedDate.toLocaleDateString('sv-SE') !== date || date < new Date().toLocaleDateString('sv-SE')) {
-      setErrorMessage('Informe uma data válida a partir de hoje (AAAA-MM-DD).');
+      showError('Informe uma data válida a partir de hoje (AAAA-MM-DD).');
       return;
     }
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
-      setErrorMessage('Informe um horário válido (HH:MM).');
+      showError('Informe um horário válido (HH:MM).');
       return;
     }
     if (type === 'teleconsulta' && meetingUrl.trim() && !/^https:\/\/[^\s]+$/i.test(meetingUrl.trim())) {
-      setErrorMessage('O link da teleconsulta deve começar com https://.'); return;
+      showError('O link da teleconsulta deve começar com https://.'); return;
     }
 
     setErrorMessage('');
@@ -81,15 +92,17 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
 
     setSaving(true);
     try { await onSaveAppointment(newAppt); onNavigate('appointments'); }
-    catch (error) { setErrorMessage(error instanceof Error ? error.message : 'Não foi possível salvar a consulta.'); }
+    catch (error) { showError(error instanceof Error ? error.message : 'Não foi possível salvar a consulta.'); }
     finally { setSaving(false); }
   };
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <BackHeader
         title="Registrar Consulta"
@@ -228,6 +241,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
           <TextInput
             value={doctor}
             onChangeText={setDoctor}
+            onFocus={keepInputVisible}
             placeholder="Ex: Dra. Juliana Santos"
             placeholderTextColor={dm.sub}
             style={[
@@ -292,12 +306,12 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
             <Text style={[styles.sectionTitle, { color: dm.sub }]}>
               5. Local da Consulta
             </Text>
-            <TextInput value={selectedLocation} onChangeText={setSelectedLocation} placeholder="Nome da unidade ou endereço" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
+            <TextInput value={selectedLocation} onChangeText={setSelectedLocation} onFocus={keepInputVisible} placeholder="Nome da unidade ou endereço" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
           </View>
         )}
         {type === 'teleconsulta' && <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
           <Text style={[styles.sectionTitle, { color: dm.sub }]}>5. Link da Teleconsulta (opcional)</Text>
-          <TextInput value={meetingUrl} onChangeText={setMeetingUrl} placeholder="https://..." autoCapitalize="none" keyboardType="url" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
+          <TextInput value={meetingUrl} onChangeText={setMeetingUrl} onFocus={keepInputVisible} placeholder="https://..." autoCapitalize="none" keyboardType="url" placeholderTextColor={dm.sub} style={[styles.input, { backgroundColor: dm.inputBg, borderColor: dm.border, color: dm.text }]} />
         </View>}
 
         {/* 6. Data & Hora */}
@@ -310,12 +324,13 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
           <Text style={[styles.sectionTitle, { color: dm.sub }]}>
             6. Data e Horário
           </Text>
-          <View style={styles.row}>
+          <View style={[styles.row, width < 380 && styles.rowCompact]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.subLabel}>Data (AAAA-MM-DD)</Text>
               <TextInput
                 value={date}
                 onChangeText={setDate}
+                onFocus={keepInputVisible}
                 placeholder="AAAA-MM-DD"
                 placeholderTextColor={dm.sub}
                 style={[
@@ -334,6 +349,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
               <TextInput
                 value={time}
                 onChangeText={setTime}
+                onFocus={keepInputVisible}
                 placeholder="HH:MM"
                 placeholderTextColor={dm.sub}
                 style={[
@@ -473,6 +489,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
+  rowCompact: { flexDirection: 'column' },
   subLabel: {
     fontSize: 9,
     fontWeight: '700',

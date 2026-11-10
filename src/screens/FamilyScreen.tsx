@@ -9,6 +9,9 @@ import {
   Modal,
   Linking,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Phone,
@@ -21,6 +24,7 @@ import {
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FamilyMember } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface FamilyScreenProps {
   family: FamilyMember[];
@@ -40,6 +44,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
   const [newRelation, setNewRelation] = useState('Filho(a)');
   const [newRole, setNewRole] = useState<'Familiar' | 'Profissional'>('Familiar');
   const [newPhone, setNewPhone] = useState('');
+  const { width } = useWindowDimensions();
+  const { scrollRef: modalScrollRef, keepInputVisible } = useInputVisibility();
 
   const handleAddSubmit = async () => {
     if (!newName.trim() || newPhone.replace(/\D/g, '').length < 10) {
@@ -262,7 +268,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
         animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalKeyboard} behavior={Platform.OS === 'web' ? undefined : 'padding'}>
+        <ScrollView ref={modalScrollRef} style={styles.modalScroll} contentContainerStyle={styles.modalOverlay} keyboardShouldPersistTaps="handled">
           <View
             style={[
               styles.modalCard,
@@ -289,6 +296,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 <TextInput
                   value={newName}
                   onChangeText={setNewName}
+                  onFocus={keepInputVisible}
+                  autoComplete="name"
                   placeholder="Ex: Carlos Eduardo Silva"
                   placeholderTextColor={dm.sub}
                   style={[
@@ -302,7 +311,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 />
               </View>
 
-              <View style={styles.row}>
+              <View style={[styles.row, width < 380 && styles.rowCompact]}>
                 <View style={[styles.formItem, { flex: 1 }]}>
                   <Text style={[styles.modalLabel, { color: dm.sub }]}>
                     Vínculo
@@ -310,6 +319,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                   <TextInput
                     value={newRelation}
                     onChangeText={setNewRelation}
+                    onFocus={keepInputVisible}
                     placeholder="Ex: Filho / Vizinho"
                     placeholderTextColor={dm.sub}
                     style={[
@@ -372,6 +382,9 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 <TextInput
                   value={newPhone}
                   onChangeText={setNewPhone}
+                  onFocus={keepInputVisible}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
                   style={[
                     styles.modalInput,
                     {
@@ -397,7 +410,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );
@@ -546,14 +560,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   modalOverlay: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
+  modalKeyboard: { flex: 1 },
+  modalScroll: { flex: 1 },
   modalCard: {
     width: '100%',
+    maxWidth: 480,
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
@@ -581,6 +598,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
+  rowCompact: { flexDirection: 'column' },
   modalLabel: {
     fontSize: 10,
     fontWeight: '800',

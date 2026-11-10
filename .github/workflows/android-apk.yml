@@ -30,6 +30,11 @@ jobs:
           java-version: '17'
       - name: Install dependencies
         run: npm ci
+      - name: Verify app
+        run: |
+          npm run lint
+          npx --yes expo-doctor@1.21.6
+          npm run build
       - name: Generate Android project
         run: npx expo prebuild --platform android --no-install
       - name: Build installable APK

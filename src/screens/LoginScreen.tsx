@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Heart, ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen } from '../types';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -27,6 +29,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
   const [focusedField, setFocusedField] = useState<'email' | 'pass' | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const passwordRef = useRef<TextInput>(null);
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const { scrollRef, keepInputVisible } = useInputVisibility();
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -50,16 +56,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Header Gradient */}
       <LinearGradient
         colors={['#1E3A5F', '#3D6E9F']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.header}
+        style={[styles.header, compact && styles.headerCompact]}
       >
         <View style={styles.logoRow}>
           <View style={styles.heartBox}>
@@ -76,6 +84,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
       <View
         style={[
           styles.card,
+          compact && styles.cardCompact,
           {
             backgroundColor: dm.card,
             borderColor: dm.border,
@@ -108,12 +117,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
           <TextInput
             value={email}
             onChangeText={setEmail}
-            onFocus={() => setFocusedField('email')}
+            onFocus={(event) => { setFocusedField('email'); keepInputVisible(event); }}
             onBlur={() => setFocusedField(null)}
             placeholder="voce@exemplo.com"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             placeholderTextColor={dm.sub}
             style={[
               styles.input,
@@ -140,12 +152,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
 
           <View style={styles.passwordWrapper}>
             <TextInput
+              ref={passwordRef}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               autoComplete="current-password"
-              onFocus={() => setFocusedField('pass')}
+              onFocus={(event) => { setFocusedField('pass'); keepInputVisible(event); }}
               onBlur={() => setFocusedField(null)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
               placeholder="••••••••"
               placeholderTextColor={dm.sub}
               style={[
@@ -161,6 +178,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeBtn}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              hitSlop={8}
             >
               {showPassword ? (
                 <EyeOff size={20} color={dm.sub} />
@@ -213,6 +233,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
   },
+  headerCompact: { paddingTop: 22, paddingBottom: 38, paddingHorizontal: 16 },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,6 +267,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderTopWidth: 1,
   },
+  cardCompact: { paddingHorizontal: 18, paddingTop: 20 },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -354,6 +376,7 @@ const styles = StyleSheet.create({
   },
   bottomRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,

@@ -14,6 +14,7 @@ import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { Stepper } from '../components/Stepper';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface PressureScreenProps {
   pressSys: number;
@@ -44,6 +45,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
 }) => {
   const [notes, setNotes] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const { scrollRef, keepInputVisible } = useInputVisibility();
 
   const getStatusInfo = (sys: number, dia: number) => {
     if (sys >= 140 || dia >= 90) {
@@ -130,9 +132,11 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <BackHeader
         title="Pressão Arterial"
@@ -228,6 +232,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
           <TextInput
             value={notes}
             onChangeText={setNotes}
+            onFocus={keepInputVisible}
             placeholder="Ex: Em repouso, após medicação matinal..."
             placeholderTextColor={dm.sub}
             multiline

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Keyboard } from 'react-native';
 import type { User } from '@supabase/supabase-js';
-import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   Screen,
   FontSizeScale,
@@ -48,6 +48,13 @@ export default function App() {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // User Profile & Data
   const [user, setUser] = useState<UserProfile>({
@@ -264,8 +271,7 @@ export default function App() {
   ].includes(screen);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: dm.bg }]}>
-      <StatusBar style={darkMode ? 'light' : 'dark'} />
+    <SafeAreaProvider>
       <MobileShell
         dm={dm}
         isSimulatorMode={isSimulatorMode}
@@ -445,7 +451,7 @@ export default function App() {
         </ScreenEntrance>
 
         {/* Persistent Accessible NavBar for Main Screens */}
-        {showNavBar && (
+        {showNavBar && !keyboardVisible && (
           <NavBar
             activeTab={activeTab}
             onTabChange={handleNavTabChange}
@@ -454,14 +460,11 @@ export default function App() {
           />
         )}
       </MobileShell>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   screenContainer: {
     flex: 1,
     position: 'relative',

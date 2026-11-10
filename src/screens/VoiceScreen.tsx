@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, MessageSquare } from 'lucide-react-native';
 import { BackHeader } from '../components/BackHeader';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface Props {
   onSaveRecognizedRecord: (record: Partial<HealthRecord>) => Promise<void>;
@@ -30,6 +31,7 @@ export const VoiceScreen: React.FC<Props> = ({ onSaveRecognizedRecord, onBack, d
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const { scrollRef, keepInputVisible } = useInputVisibility();
   const parsed = useMemo(() => parseMeasurement(phrase), [phrase]);
 
   const save = async () => {
@@ -43,13 +45,13 @@ export const VoiceScreen: React.FC<Props> = ({ onSaveRecognizedRecord, onBack, d
     } finally { setSaving(false); }
   };
 
-  return <ScrollView style={{ backgroundColor: dm.bg }} contentContainerStyle={styles.page}>
+  return <ScrollView ref={scrollRef} style={{ backgroundColor: dm.bg }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
     <BackHeader title="Registro por Texto" subtitle="Descreva sua medição para preencher os valores" onBack={onBack} bgGradient={['#1E3A5F', '#3D6E9F']} />
     <View style={styles.body}>
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <View style={styles.heading}><MessageSquare size={20} color={COLORS.primary} /><Text style={[styles.title, { color: dm.text, fontSize: 18 * fontSizeScale }]}>Escreva sua medição</Text></View>
         <Text style={[styles.help, { color: dm.sub }]}>Exemplo: “Pressão 12 por 8 e glicemia 104”. Confira os valores antes de salvar.</Text>
-        <TextInput value={phrase} onChangeText={(value) => { setPhrase(value); setSaved(false); setError(''); }} multiline placeholder="Pressão 12 por 8 e glicemia 104" placeholderTextColor={dm.sub} style={[styles.input, { color: dm.text, backgroundColor: dm.inputBg, borderColor: dm.border }]} />
+        <TextInput value={phrase} onChangeText={(value) => { setPhrase(value); setSaved(false); setError(''); }} onFocus={keepInputVisible} multiline placeholder="Pressão 12 por 8 e glicemia 104" placeholderTextColor={dm.sub} style={[styles.input, { color: dm.text, backgroundColor: dm.inputBg, borderColor: dm.border }]} />
       </View>
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <Text style={[styles.section, { color: dm.sub }]}>VALORES IDENTIFICADOS</Text>

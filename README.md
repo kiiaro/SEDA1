@@ -19,8 +19,13 @@ O esquema aplicado no Supabase está em [`supabase/schema.sql`](supabase/schema.
 - Emergência abre a ligação para o SAMU 192 ou para um contato cadastrado. O app não envia chamados automaticamente.
 - Tema claro/escuro e opções de tamanho de texto.
 - Transições suaves entre telas, respostas visuais ao toque, animação dos indicadores e atualização da tela inicial ao puxar para baixo. As animações respeitam a preferência de movimento reduzido do aparelho.
+- Formulários ajustados para telas estreitas, com área segura e rolagem para manter o campo ativo visível acima do teclado.
 
 O SEDA1 é um diário de saúde. Ele não confirma agendamentos nem acessa dados do SUS ou Gov.br. As faixas exibidas são referências gerais; metas e decisões clínicas devem ser definidas com um profissional de saúde.
+
+## Verificação
+
+Execute `npm run lint`, `npx expo-doctor` e `npm run build`. O workflow do APK executa esses passos antes da compilação Android. Em um aparelho, confira login, cadastro, consultas e contatos com o teclado aberto; teste também a rolagem e o tamanho de texto ampliado.
 
 ## APK para Android
 
