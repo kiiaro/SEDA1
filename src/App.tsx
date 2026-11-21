@@ -25,6 +25,7 @@ import { ScreenEntrance } from './components/Motion';
 import { SplashScreen } from './screens/SplashScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { LoginScreen } from './screens/LoginScreen';
+import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { RegisterScreen } from './screens/RegisterScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PressureScreen } from './screens/PressureScreen';
@@ -54,6 +55,13 @@ export default function App() {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setScreen('reset_password');
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // User Profile & Data
@@ -117,6 +125,14 @@ export default function App() {
     if (error) throw new Error('E-mail ou senha inválidos, ou conta ainda não confirmada.');
     if (!data.user) throw new Error('Não foi possível carregar sua conta.');
     await hydrate(data.user);
+  };
+
+  const handleUpdatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    await supabase.auth.signOut();
+    setAuthNotice('Senha atualizada. Entre com a nova senha.');
+    setScreen('login');
   };
 
   const handleRegister = async (email: string, password: string, profile: UserProfile) => {
@@ -291,12 +307,17 @@ export default function App() {
               onLogin={handleLogin}
               notice={authNotice}
               onResetPassword={async (email) => {
-                const { error } = await supabase.auth.resetPasswordForEmail(email);
+                const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+                const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
               }}
               onNavigate={(s) => setScreen(s)}
               dm={dm}
             />
+          )}
+
+          {screen === 'reset_password' && (
+            <ResetPasswordScreen onSave={handleUpdatePassword} onBack={() => setScreen('login')} dm={dm} />
           )}
 
           {screen === 'register' && (

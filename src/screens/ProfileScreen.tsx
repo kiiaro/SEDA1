@@ -14,6 +14,7 @@ import {
   Pill,
   ShieldAlert,
   Phone,
+  UserRound,
 } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen, UserProfile } from '../types';
@@ -32,8 +33,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   dm,
 }) => {
   const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`);
+    if (!phone) return;
+    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() => {});
   };
+  const initials = user.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'S';
 
   return (
     <ScrollView
@@ -58,12 +61,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         <View style={styles.avatarWrapper}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AS</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.onlineDot} />
         </View>
 
         <Text style={styles.userName}>{user.name}</Text>
+        <View style={styles.profileBadge}><UserRound size={14} color="#FFFFFF" /><Text style={styles.profileBadgeText}>{user.userType}</Text></View>
+        {user.phone ? <Text style={styles.userSus}>{user.phone}</Text> : null}
         {user.susCard ? <Text style={styles.userSus}>Cartão SUS: {user.susCard}</Text> : null}
       </LinearGradient>
 
@@ -80,6 +85,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             Diagnósticos & Condições Monitoradas
           </Text>
           <View style={styles.tagWrap}>
+            {user.conditions.length === 0 ? <Text style={[styles.emptyText, { color: dm.sub }]}>Nenhuma condição adicionada.</Text> : null}
             {user.conditions.map((cond, idx) => (
               <View
                 key={idx}
@@ -111,10 +117,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 Prescrição Médica Ativa
               </Text>
             </View>
-            <Text style={styles.medCount}>3 Registrados</Text>
+            <Text style={styles.medCount}>{user.medications.length} cadastrados</Text>
           </View>
 
           <View style={styles.medList}>
+            {user.medications.length === 0 ? <Text style={[styles.emptyText, { color: dm.sub }]}>Nenhuma medicação cadastrada. Consulte um profissional antes de iniciar ou alterar medicamentos.</Text> : null}
             {user.medications.map((med, idx) => (
               <View
                 key={idx}
@@ -161,7 +168,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <View style={styles.contactRow}>
             <View>
               <Text style={[styles.contactName, { color: dm.text }]}>
-                {user.emergencyContact.name}
+                {user.emergencyContact.name || 'Nenhum contato cadastrado'}
               </Text>
               <Text style={[styles.contactRel, { color: dm.sub }]}>
                 {user.emergencyContact.relation}
@@ -170,6 +177,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <TouchableOpacity
               onPress={() => handleCall(user.emergencyContact.phone)}
+              disabled={!user.emergencyContact.phone}
               activeOpacity={0.8}
               style={styles.callBtn}
             >
@@ -287,6 +295,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },
+  profileBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
+  profileBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   userSus: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.85)',
@@ -347,6 +357,7 @@ const styles = StyleSheet.create({
   medList: {
     gap: 8,
   },
+  emptyText: { fontSize: 13, lineHeight: 19 },
   medItem: {
     flexDirection: 'row',
     alignItems: 'center',

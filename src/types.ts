@@ -2,6 +2,7 @@ export type Screen =
   | 'splash'
   | 'onboarding'
   | 'login'
+  | 'reset_password'
   | 'register'
   | 'home'
   | 'pressure'

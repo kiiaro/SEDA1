@@ -48,8 +48,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
 
   const handleForgotPass = async () => {
     if (!email.trim()) { setMessage('Digite seu e-mail para recuperar a senha.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setMessage('Confira o formato do e-mail e tente novamente.'); return; }
     setBusy(true);
-    try { await onResetPassword(email.trim().toLowerCase()); setMessage('Se o e-mail estiver cadastrado, você receberá um link de recuperação.'); }
+    setMessage('');
+    try { await onResetPassword(email.trim().toLowerCase()); setMessage('Se este e-mail estiver cadastrado, enviaremos um link. Abra-o neste aparelho e confira também a pasta de spam.'); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível solicitar o link.'); }
     finally { setBusy(false); }
   };
@@ -143,7 +145,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
             <Text style={[styles.inputLabel, { color: dm.sub }]}>
               Senha de Acesso
             </Text>
-            <TouchableOpacity onPress={handleForgotPass}>
+            <TouchableOpacity onPress={handleForgotPass} disabled={busy} accessibilityRole="button">
               <Text style={[styles.forgotText, { color: COLORS.primary }]}>
                 Esqueci a senha
               </Text>

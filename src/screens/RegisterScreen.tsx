@@ -98,6 +98,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         {/* User Type Toggle */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: dm.sub }]}>Tipo de Perfil</Text>
+          <Text style={[styles.profileHint, { color: dm.sub }]}>{userType === 'Paciente' ? 'Registre e acompanhe suas próprias medições e consultas.' : userType === 'Familiar' ? 'Organize sua rotina de cuidado, registre medições e cadastre sua rede de apoio.' : 'Use o diário para registrar medições e organizar informações de acompanhamento.'}</Text>
           <View style={[styles.typeRow, compact && styles.typeRowCompact]}>
             {userTypes.map((type) => {
               const isSelected = userType === type;
@@ -303,6 +304,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  profileHint: { fontSize: 13, lineHeight: 19 },
   typeRow: {
     flexDirection: 'row',
     gap: 8,
