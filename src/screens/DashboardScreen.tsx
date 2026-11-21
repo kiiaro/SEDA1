@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Share,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
 import {
@@ -28,7 +29,16 @@ interface DashboardScreenProps {
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBack, dm }) => {
   const [activeTab, setActiveTab] = useState<'pressure' | 'glucose' | 'frequency'>('pressure');
 
-  const recentRecords = [...records].slice(0, 7).reverse();
+  const recentRecords = records.filter((r) => r.measurement !== 'glucose').slice(0, 7).reverse();
+  const recentGlucoseRecords = records.filter((r) => r.measurement !== 'pressure').slice(0, 7).reverse();
+  const pressureRecords = records.filter((r) => r.measurement !== 'glucose');
+  const glucoseRecords = records.filter((r) => r.measurement !== 'pressure');
+  const average = (values: number[]) => values.length ? String(Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)) : '—';
+  const dailyCounts = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(); day.setDate(day.getDate() - (6 - index));
+    const date = day.toLocaleDateString('sv-SE');
+    return { label: day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''), date, count: records.filter((r) => r.recordedAt && new Date(r.recordedAt).toLocaleDateString('sv-SE') === date).length };
+  });
   const chartWidth = 300;
   const chartHeight = 110;
 
@@ -51,8 +61,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
   const diaPathD = diaPoints.length > 0 ? `M ${diaPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
 
   // Glucose SVG points
-  const glucPoints = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
+  const glucPoints = recentGlucoseRecords.map((r, i) => {
+    const x = (i / Math.max(recentGlucoseRecords.length - 1, 1)) * (chartWidth - 24) + 12;
     const norm = (r.glucose - 60) / (180 - 60);
     const y = chartHeight - norm * (chartHeight - 20) - 10;
     return { x, y, val: r.glucose, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
@@ -61,21 +71,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
   const glucPathD = glucPoints.length > 0 ? `M ${glucPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
   const glucAreaD = glucPoints.length > 0 ? `${glucPathD} L ${glucPoints[glucPoints.length - 1].x},${chartHeight} L ${glucPoints[0].x},${chartHeight} Z` : '';
 
-  const weeklySummary = [
-    { day: 'Segunda-feira', status: 'ok', text: 'Todas medições na meta' },
-    { day: 'Terça-feira', status: 'ok', text: 'Glicemia e pressão excelentes' },
-    { day: 'Quarta-feira', status: 'warn', text: 'Pressão 142/92 (pós-almoço)' },
-    { day: 'Quinta-feira', status: 'ok', text: 'Caminhada + medicação no horário' },
-    { day: 'Sexta-feira', status: 'ok', text: 'Controle contínuo estável' },
-    { day: 'Sábado', status: 'warn', text: 'Glicemia 138 mg/dL' },
-    { day: 'Domingo (Hoje)', status: 'ok', text: 'Aferição matinal concluída' },
-  ];
-
-  const handleShare = () => {
-    Alert.alert(
-      'Exportar Relatório',
-      'Relatório clínico exportado para PDF (Padrão SUS/UBS) pronto para compartilhar!'
-    );
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: `SEDA — resumo de medições\nPressão: ${pressureRecords.length} registros; média sistólica ${average(pressureRecords.map((r) => r.systolic))} mmHg.\nGlicemia: ${glucoseRecords.length} registros; média ${average(glucoseRecords.map((r) => r.glucose))} mg/dL.` });
+    } catch { Alert.alert('Compartilhamento indisponível', 'Não foi possível abrir a opção de compartilhar.'); }
   };
 
   return (
@@ -86,7 +85,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
     >
       <BackHeader
         title="Painel Analítico"
-        subtitle="Métricas, gráficos e relatório clínico"
+        subtitle="Resumo baseado nas suas medições salvas"
         onBack={onBack}
         bgGradient={['#1E3A5F', '#3D6E9F']}
         rightElement={
@@ -169,34 +168,25 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
           {/* KPI 1 */}
           <View style={[styles.kpiCard, styles.kpiCard1]}>
             <Text style={styles.kpiLabel1}>Média Sist.</Text>
-            <Text style={styles.kpiVal1}>126</Text>
+            <Text style={styles.kpiVal1}>{average(pressureRecords.map((r) => r.systolic))}</Text>
             <Text style={styles.kpiUnit}>mmHg</Text>
-            <View style={styles.kpiTrend}>
-              <TrendingDown size={12} color="#16A34A" />
-              <Text style={styles.kpiTrendText}>-3%</Text>
-            </View>
+            <Text style={styles.kpiTrendText}>{pressureRecords.length} registros</Text>
           </View>
 
           {/* KPI 2 */}
           <View style={[styles.kpiCard, styles.kpiCard2]}>
             <Text style={styles.kpiLabel2}>Glicose Média</Text>
-            <Text style={styles.kpiVal2}>112</Text>
+            <Text style={styles.kpiVal2}>{average(glucoseRecords.map((r) => r.glucose))}</Text>
             <Text style={styles.kpiUnit}>mg/dL</Text>
-            <View style={styles.kpiTrend}>
-              <TrendingDown size={12} color="#16A34A" />
-              <Text style={styles.kpiTrendText}>-5%</Text>
-            </View>
+            <Text style={styles.kpiTrendText}>{glucoseRecords.length} registros</Text>
           </View>
 
           {/* KPI 3 */}
           <View style={[styles.kpiCard, styles.kpiCard3]}>
             <Text style={styles.kpiLabel3}>Pulso Médio</Text>
-            <Text style={styles.kpiVal3}>73</Text>
+            <Text style={styles.kpiVal3}>{average(records.filter((r) => r.hasHeartRate).map((r) => r.heartRate))}</Text>
             <Text style={styles.kpiUnit}>bpm</Text>
-            <View style={styles.kpiTrend}>
-              <TrendingUp size={12} color="#4F46E5" />
-              <Text style={[styles.kpiTrendText, { color: '#4F46E5' }]}>Normal</Text>
-            </View>
+            <Text style={[styles.kpiTrendText, { color: '#4F46E5' }]}>{records.filter((r) => r.hasHeartRate).length} registros</Text>
           </View>
         </View>
 
@@ -253,7 +243,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
               <Text style={[styles.chartTitle, { color: dm.sub }]}>
                 Oscilação Glicêmica
               </Text>
-              <Text style={styles.targetLabel}>Meta: 70 - 126 mg/dL</Text>
+              <Text style={styles.targetLabel}>Medições salvas</Text>
             </View>
 
             <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
@@ -294,15 +284,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
               <Text style={[styles.chartTitle, { color: dm.sub }]}>
                 Aferições Diárias
               </Text>
-              <Text style={[styles.targetLabel, { color: '#4F46E5' }]}>Meta: 2 aferições/dia</Text>
+              <Text style={[styles.targetLabel, { color: '#4F46E5' }]}>Últimos 7 dias</Text>
             </View>
 
             <View style={styles.barChartContainer}>
-              {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Hoje'].map((day, i) => {
-                const heightVal = 24 + i * 9;
+              {dailyCounts.map((day, i) => {
+                const heightVal = Math.min(100, day.count * 24);
                 const isToday = i === 6;
                 return (
-                  <View key={day} style={styles.barColumn}>
+                  <View key={day.date} style={styles.barColumn}>
                     <View
                       style={[
                         styles.barItem,
@@ -318,7 +308,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
                         { color: isToday ? COLORS.primary : dm.sub },
                       ]}
                     >
-                      {day}
+                      {day.label}
                     </Text>
                   </View>
                 );
@@ -335,32 +325,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
           ]}
         >
           <Text style={[styles.chartTitle, { color: dm.sub, marginBottom: 8 }]}>
-            Resumo de Estabilidade Semanal
+            Registros nos últimos 7 dias
           </Text>
 
-          {weeklySummary.map((item, idx) => (
+          {dailyCounts.map((item, idx) => (
             <View
               key={idx}
               style={[
                 styles.summaryRow,
-                idx < weeklySummary.length - 1 && {
+                idx < dailyCounts.length - 1 && {
                   borderBottomWidth: 1,
                   borderBottomColor: dm.border,
                 },
               ]}
             >
               <View style={styles.summaryLeft}>
-                {item.status === 'ok' ? (
+                {item.count > 0 ? (
                   <CheckCircle2 size={16} color="#16A34A" />
                 ) : (
                   <AlertTriangle size={16} color="#D97706" />
                 )}
                 <Text style={[styles.summaryDay, { color: dm.text }]}>
-                  {item.day}
+                  {item.label} • {item.date}
                 </Text>
               </View>
               <Text style={styles.summaryText} numberOfLines={1}>
-                {item.text}
+                {item.count} {item.count === 1 ? 'medição' : 'medições'}
               </Text>
             </View>
           ))}

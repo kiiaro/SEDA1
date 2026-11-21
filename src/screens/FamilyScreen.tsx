@@ -8,6 +8,10 @@ import {
   ScrollView,
   Modal,
   Linking,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Phone,
@@ -20,10 +24,11 @@ import {
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FamilyMember } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface FamilyScreenProps {
   family: FamilyMember[];
-  onAddMember: (member: FamilyMember) => void;
+  onAddMember: (member: FamilyMember) => Promise<void>;
   onBack: () => void;
   dm: DarkModeTheme;
 }
@@ -37,11 +42,15 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRelation, setNewRelation] = useState('Filho(a)');
-  const [newRole, setNewRole] = useState<'Familiar' | 'SUS'>('Familiar');
-  const [newPhone, setNewPhone] = useState('(11) 9');
+  const [newRole, setNewRole] = useState<'Familiar' | 'Profissional'>('Familiar');
+  const [newPhone, setNewPhone] = useState('');
+  const { width } = useWindowDimensions();
+  const { scrollRef: modalScrollRef, keepInputVisible } = useInputVisibility();
 
-  const handleAddSubmit = () => {
-    if (!newName.trim()) return;
+  const handleAddSubmit = async () => {
+    if (!newName.trim() || newPhone.replace(/\D/g, '').length < 10) {
+      Alert.alert('Dados incompletos', 'Informe nome e telefone com DDD.'); return;
+    }
 
     const initials = newName
       .split(' ')
@@ -55,23 +64,29 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
       relation: newRelation,
       role: newRole,
       phone: newPhone,
-      avatarBg: newRole === 'SUS' ? COLORS.primary : COLORS.accent,
+      avatarBg: newRole === 'Profissional' ? COLORS.primary : COLORS.accent,
       initials: initials || 'CD',
       status: 'online',
       lastSeen: 'Adicionado agora',
     };
 
-    onAddMember(newMember);
-    setShowAddModal(false);
-    setNewName('');
+    try {
+      await onAddMember(newMember);
+      setShowAddModal(false);
+      setNewName(''); setNewPhone('');
+    } catch (error) { Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.'); }
   };
 
   const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`);
+    Linking.openURL(`tel:${phone.replace(/\D/g, '')}`)
+      .catch(() => Alert.alert('Ligação indisponível', 'Use o telefone para ligar para este contato.'));
   };
 
   const handleWhatsApp = (phone: string) => {
-    Linking.openURL(`https://wa.me/55${phone.replace(/\D/g, '')}`);
+    const digits = phone.replace(/\D/g, '');
+    const international = digits.startsWith('55') && digits.length >= 12 ? digits : `55${digits}`;
+    Linking.openURL(`https://wa.me/${international}`)
+      .catch(() => Alert.alert('WhatsApp indisponível', 'Confira o número cadastrado.'));
   };
 
   return (
@@ -82,7 +97,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
     >
       <BackHeader
         title="Rede de Cuidado"
-        subtitle="Familiares, cuidadores e equipe de saúde SUS"
+        subtitle="Contatos cadastrados por você"
         onBack={onBack}
         bgGradient={['#0F766E', '#7CC9BE']}
         rightElement={
@@ -112,7 +127,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
           <Text style={styles.bannerText}>
             Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
             <Text style={{ fontWeight: '800', color: '#0F766E' }}>
-              Familiar / SUS
+              Familiares e profissionais
             </Text>{' '}
             recebem alerta imediato.
           </Text>
@@ -257,7 +272,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
         animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalKeyboard} behavior={Platform.OS === 'web' ? undefined : 'padding'}>
+        <ScrollView ref={modalScrollRef} style={styles.modalScroll} contentContainerStyle={styles.modalOverlay} keyboardShouldPersistTaps="handled">
           <View
             style={[
               styles.modalCard,
@@ -266,7 +282,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
           >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: dm.text }]}>
-                Novo Cuidador / Rede SUS
+                Novo Contato de Apoio
               </Text>
               <TouchableOpacity
                 onPress={() => setShowAddModal(false)}
@@ -284,6 +300,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 <TextInput
                   value={newName}
                   onChangeText={setNewName}
+                  onFocus={keepInputVisible}
+                  autoComplete="name"
                   placeholder="Ex: Carlos Eduardo Silva"
                   placeholderTextColor={dm.sub}
                   style={[
@@ -297,7 +315,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 />
               </View>
 
-              <View style={styles.row}>
+              <View style={[styles.row, width < 380 && styles.rowCompact]}>
                 <View style={[styles.formItem, { flex: 1 }]}>
                   <Text style={[styles.modalLabel, { color: dm.sub }]}>
                     Vínculo
@@ -305,6 +323,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                   <TextInput
                     value={newRelation}
                     onChangeText={setNewRelation}
+                    onFocus={keepInputVisible}
                     placeholder="Ex: Filho / Vizinho"
                     placeholderTextColor={dm.sub}
                     style={[
@@ -341,19 +360,19 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      onPress={() => setNewRole('SUS')}
+                      onPress={() => setNewRole('Profissional')}
                       style={[
                         styles.roleToggleBtn,
-                        newRole === 'SUS' && { backgroundColor: COLORS.primary },
+                        newRole === 'Profissional' && { backgroundColor: COLORS.primary },
                       ]}
                     >
                       <Text
                         style={[
                           styles.roleToggleText,
-                          { color: newRole === 'SUS' ? '#FFFFFF' : dm.sub },
+                          { color: newRole === 'Profissional' ? '#FFFFFF' : dm.sub },
                         ]}
                       >
-                        SUS
+                        Profissional
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -367,6 +386,9 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 <TextInput
                   value={newPhone}
                   onChangeText={setNewPhone}
+                  onFocus={keepInputVisible}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
                   style={[
                     styles.modalInput,
                     {
@@ -392,7 +414,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );
@@ -541,14 +564,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   modalOverlay: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
+  modalKeyboard: { flex: 1 },
+  modalScroll: { flex: 1 },
   modalCard: {
     width: '100%',
+    maxWidth: 480,
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
@@ -576,6 +602,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
+  rowCompact: { flexDirection: 'column' },
   modalLabel: {
     fontSize: 10,
     fontWeight: '800',

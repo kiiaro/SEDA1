@@ -50,11 +50,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   ];
 
   const handlePrivacy = () => {
-    Alert.alert('Privacidade & LGPD', 'SEDA está em total conformidade com a LGPD e sigilo médico SUS.');
+    Alert.alert('Privacidade', 'Seus registros ficam associados à sua conta e são protegidos por regras de acesso por usuário no banco de dados.');
   };
 
   const handleHelp = () => {
-    Alert.alert('Central de Ajuda SEDA', 'WhatsApp de Suporte (11) 98765-4321 ou ligue 136 (Disque Saúde SUS).');
+    Alert.alert('Ajuda', 'Para dúvidas sobre o aplicativo, consulte as instruções do repositório SEDA1.');
   };
 
   return (

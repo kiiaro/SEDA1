@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { useReducedMotion } from './Motion';
 
 interface HealthRingProps {
   value: number;
@@ -23,6 +24,15 @@ export const HealthRing: React.FC<HealthRingProps> = ({
   unit,
   textColor,
 }) => {
+  const reduced = useReducedMotion();
+  const scale = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    if (reduced) { scale.setValue(1); return; }
+    scale.setValue(0.93);
+    Animated.spring(scale, { toValue: 1, speed: 15, bounciness: 9, useNativeDriver: true }).start();
+  }, [value, scale, reduced]);
+
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedValue = Math.min(Math.max(value, 0), max);
@@ -30,7 +40,7 @@ export const HealthRing: React.FC<HealthRingProps> = ({
   const strokeDashoffset = circumference - progressRatio * circumference;
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <Animated.View style={[styles.container, { width: size, height: size, transform: [{ scale }] }]}>
       <Svg width={size} height={size}>
         <G transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {/* Background circle */}
@@ -74,7 +84,7 @@ export const HealthRing: React.FC<HealthRingProps> = ({
           </Text>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

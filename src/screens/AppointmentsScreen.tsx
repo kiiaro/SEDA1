@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Alert,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -45,7 +46,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [cancelModalAppt, setCancelModalAppt] = useState<Appointment | null>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString('sv-SE');
 
   const upcomingList = appointments.filter(
     (a) => a.status !== 'cancelled' && a.status !== 'completed' && a.date >= todayStr
@@ -105,7 +106,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <BackHeader
-          title="Consultas Médicas SUS"
+          title="Minhas Consultas"
           subtitle="Agendamentos presenciais e teleconsultas"
           onBack={onBack}
           bgGradient={['#1E3A5F', '#3D6E9F']}
@@ -142,7 +143,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
               <Text style={styles.highlightDoctor}>{nextAppt.doctor}</Text>
               <Text style={styles.highlightSpecialty}>{nextAppt.specialty}</Text>
               <Text style={styles.highlightLocation} numberOfLines={1}>
-                📍 {nextAppt.location || 'Teleconsulta Conecte SUS'}
+                📍 {nextAppt.location || 'Local não informado'}
               </Text>
             </LinearGradient>
           )}
@@ -269,7 +270,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
                         style={[styles.detailText, { color: dm.text }]}
                         numberOfLines={1}
                       >
-                        {appt.location || 'Teleconsulta Conecte SUS'}
+                        {appt.location || 'Local não informado'}
                       </Text>
                     </View>
 
@@ -290,22 +291,18 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
                   )}
 
                   <View style={styles.actionRow}>
-                    {appt.type === 'teleconsulta' ? (
+                    {appt.type === 'teleconsulta' && appt.meetingUrl ? (
                       <TouchableOpacity
-                        onPress={() =>
-                          Alert.alert('Teleconsulta SUS', `Entrando na sala virtual com ${appt.doctor}...`)
-                        }
+                        onPress={() => Linking.openURL(appt.meetingUrl!).catch(() => Alert.alert('Link indisponível', 'Confira o link cadastrado.'))}
                         activeOpacity={0.8}
                         style={styles.virtualBtn}
                       >
                         <Video size={14} color="#FFFFFF" />
-                        <Text style={styles.virtualBtnText}>Entrar na Sala Virtual</Text>
+                        <Text style={styles.virtualBtnText}>Abrir Teleconsulta</Text>
                       </TouchableOpacity>
-                    ) : (
+                    ) : appt.type === 'presencial' && appt.location ? (
                       <TouchableOpacity
-                        onPress={() =>
-                          Alert.alert('Como Chegar', `Abrindo rota no mapa para: ${appt.location}`)
-                        }
+                        onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appt.location!)}`).catch(() => Alert.alert('Mapa indisponível', 'Não foi possível abrir o mapa.'))}
                         activeOpacity={0.7}
                         style={[
                           styles.mapBtn,
@@ -315,7 +312,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
                         <MapPin size={14} color="#EF4444" />
                         <Text style={[styles.mapBtnText, { color: dm.text }]}>Como Chegar</Text>
                       </TouchableOpacity>
-                    )}
+                    ) : null}
 
                     {appt.status !== 'cancelled' && (
                       <TouchableOpacity

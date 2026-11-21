@@ -1,49 +1,73 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Heart, ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen } from '../types';
+import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { useInputVisibility } from '../components/useInputVisibility';
 
 interface LoginScreenProps {
-  onLogin: () => void;
+  onLogin: (email: string, password: string) => Promise<void>;
+  onResetPassword: (email: string) => Promise<void>;
+  notice?: string;
   onNavigate: (screen: Screen) => void;
   dm: DarkModeTheme;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, dm }) => {
-  const [cpf, setCpf] = useState('123.456.789-00');
-  const [password, setPassword] = useState('123456');
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPassword, notice, onNavigate, dm }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState<'cpf' | 'pass' | null>(null);
+  const [focusedField, setFocusedField] = useState<'email' | 'pass' | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const passwordRef = useRef<TextInput>(null);
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const { scrollRef, keepInputVisible } = useInputVisibility();
 
-  const handleForgotPass = () => {
-    Alert.alert(
-      'Recuperação de Senha',
-      'Instruções enviadas com sucesso para o WhatsApp e e-mail cadastrados no Conecte SUS!'
-    );
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setMessage('Informe seu e-mail e sua senha.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try { await onLogin(email.trim().toLowerCase(), password); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível entrar.'); }
+    finally { setBusy(false); }
+  };
+
+  const handleForgotPass = async () => {
+    if (!email.trim()) { setMessage('Digite seu e-mail para recuperar a senha.'); return; }
+    setBusy(true);
+    try { await onResetPassword(email.trim().toLowerCase()); setMessage('Se o e-mail estiver cadastrado, você receberá um link de recuperação.'); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível solicitar o link.'); }
+    finally { setBusy(false); }
   };
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: dm.bg }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Header Gradient */}
       <LinearGradient
         colors={['#1E3A5F', '#3D6E9F']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.header}
+        style={[styles.header, compact && styles.headerCompact]}
       >
         <View style={styles.logoRow}>
           <View style={styles.heartBox}>
@@ -52,7 +76,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
           <Text style={styles.brandTitle}>SEDA</Text>
         </View>
         <Text style={styles.brandSubtitle}>
-          Equilíbrio de Pressão & Diabetes • SUS
+          Acompanhe suas medições em um só lugar
         </Text>
       </LinearGradient>
 
@@ -60,6 +84,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
       <View
         style={[
           styles.card,
+          compact && styles.cardCompact,
           {
             backgroundColor: dm.card,
             borderColor: dm.border,
@@ -80,28 +105,34 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
         <View style={styles.titleSection}>
           <Text style={[styles.title, { color: dm.text }]}>Acesse sua Conta</Text>
           <Text style={[styles.subtitle, { color: dm.sub }]}>
-            Insira seu CPF ou cartão SUS para continuar
+            Entre com seu e-mail e senha para acessar seus dados
           </Text>
         </View>
 
         {/* Input Fields */}
         <View style={styles.formGroup}>
           <Text style={[styles.inputLabel, { color: dm.sub }]}>
-            CPF ou Número SUS
+            E-mail
           </Text>
           <TextInput
-            value={cpf}
-            onChangeText={setCpf}
-            onFocus={() => setFocusedField('cpf')}
+            value={email}
+            onChangeText={setEmail}
+            onFocus={(event) => { setFocusedField('email'); keepInputVisible(event); }}
             onBlur={() => setFocusedField(null)}
-            placeholder="000.000.000-00"
+            placeholder="voce@exemplo.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             placeholderTextColor={dm.sub}
             style={[
               styles.input,
               {
                 backgroundColor: dm.inputBg,
                 color: dm.text,
-                borderColor: focusedField === 'cpf' ? COLORS.primary : dm.border,
+                borderColor: focusedField === 'email' ? COLORS.primary : dm.border,
               },
             ]}
           />
@@ -121,11 +152,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
 
           <View style={styles.passwordWrapper}>
             <TextInput
+              ref={passwordRef}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              onFocus={() => setFocusedField('pass')}
+              autoComplete="current-password"
+              onFocus={(event) => { setFocusedField('pass'); keepInputVisible(event); }}
               onBlur={() => setFocusedField(null)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
               placeholder="••••••••"
               placeholderTextColor={dm.sub}
               style={[
@@ -141,6 +178,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeBtn}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              hitSlop={8}
             >
               {showPassword ? (
                 <EyeOff size={20} color={dm.sub} />
@@ -153,37 +193,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigate, d
 
         {/* Login Button */}
         <TouchableOpacity
-          onPress={onLogin}
+          onPress={handleLogin}
+          disabled={busy}
           activeOpacity={0.8}
           style={[styles.loginBtn, { backgroundColor: COLORS.primary }]}
         >
-          <Text style={styles.loginBtnText}>Entrar no SEDA</Text>
+          <Text style={styles.loginBtnText}>{busy ? 'Aguarde...' : 'Entrar no SEDA'}</Text>
           <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={styles.dividerRow}>
-          <View style={[styles.dividerLine, { backgroundColor: dm.border }]} />
-          <Text style={styles.dividerText}>OU</Text>
-          <View style={[styles.dividerLine, { backgroundColor: dm.border }]} />
-        </View>
-
-        {/* Gov.br Button */}
-        <TouchableOpacity
-          onPress={onLogin}
-          activeOpacity={0.7}
-          style={[
-            styles.govBtn,
-            {
-              backgroundColor: dm.inputBg,
-              borderColor: dm.border,
-            },
-          ]}
-        >
-          <Text style={[styles.govBtnText, { color: dm.text }]}>
-            Continuar com Gov.br / Conecte SUS
-          </Text>
-        </TouchableOpacity>
+        {message || notice ? <Text style={[styles.feedback, { color: dm.text, backgroundColor: dm.inputBg, borderColor: dm.border }]}>{message || notice}</Text> : null}
 
         {/* Bottom Switch */}
         <View style={styles.bottomRow}>
@@ -214,6 +233,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
   },
+  headerCompact: { paddingTop: 22, paddingBottom: 38, paddingHorizontal: 16 },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -247,6 +267,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderTopWidth: 1,
   },
+  cardCompact: { paddingHorizontal: 18, paddingTop: 20 },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -355,6 +376,7 @@ const styles = StyleSheet.create({
   },
   bottomRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
@@ -367,4 +389,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  feedback: { marginTop: 16, padding: 12, borderRadius: 12, borderWidth: 1, fontSize: 13, lineHeight: 19 },
 });

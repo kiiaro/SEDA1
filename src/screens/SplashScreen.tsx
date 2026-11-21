@@ -1,26 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, Activity, ShieldCheck } from 'lucide-react-native';
 
-interface SplashScreenProps {
-  onFinish: () => void;
-}
-
-export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onFinish();
-    }, 2800);
-    return () => clearTimeout(timer);
-  }, [onFinish]);
-
+export const SplashScreen: React.FC = () => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.95}
-      onPress={onFinish}
-      style={styles.touchable}
-    >
+    <View style={styles.touchable}>
       <LinearGradient
         colors={['#1E3A5F', '#3D6E9F', '#7CC9BE']}
         start={{ x: 0, y: 0 }}
@@ -36,9 +21,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         <View style={styles.headerRow}>
           <View style={styles.susBadge}>
             <ShieldCheck size={14} color="#FFFFFF" />
-            <Text style={styles.susBadgeText}>Integrado ao SUS</Text>
+            <Text style={styles.susBadgeText}>Seu diário de saúde</Text>
           </View>
-          <Text style={styles.versionText}>v2.4 Expo Native</Text>
+          <Text style={styles.versionText}>SEDA Saúde</Text>
         </View>
 
         {/* Center Brand Identity */}
@@ -72,15 +57,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
         {/* Footer Indicators */}
         <View style={styles.footerRow}>
-          <View style={styles.indicatorDots}>
-            <View style={styles.activeDot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-          <Text style={styles.footerHint}>Toque em qualquer lugar para avançar</Text>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.footerHint}>Preparando seu diário de saúde</Text>
         </View>
       </LinearGradient>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -246,23 +227,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 10,
     zIndex: 10,
-  },
-  indicatorDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  activeDot: {
-    width: 20,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   footerHint: {
     fontSize: 11,
