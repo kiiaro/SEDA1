@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MotionButton as TouchableOpacity } from './Motion';
-import { Home, History, Bell, Users, User } from 'lucide-react-native';
-import { DarkModeTheme, Screen } from '../types';
+import { Home, History, Bell, Users, User, MessageCircle } from 'lucide-react-native';
+import { DarkModeTheme, Screen, UserProfile } from '../types';
 import { COLORS } from '../constants/theme';
 
 interface NavBarProps {
@@ -10,6 +10,7 @@ interface NavBarProps {
   onTabChange: (screen: Screen) => void;
   dm: DarkModeTheme;
   unreadAlertsCount?: number;
+  userType: UserProfile['userType'];
 }
 
 export const NavBar: React.FC<NavBarProps> = ({
@@ -17,8 +18,20 @@ export const NavBar: React.FC<NavBarProps> = ({
   onTabChange,
   dm,
   unreadAlertsCount = 2,
+  userType,
 }) => {
-  const tabs = [
+  const tabs = userType === 'Profissional' ? [
+    { id: 'home', label: 'Painel', icon: Home },
+    { id: 'appointments', label: 'Agenda', icon: History },
+    { id: 'connections', label: 'Pacientes', icon: Users },
+    { id: 'profile', label: 'Perfil', icon: User },
+  ] : userType === 'Paciente' ? [
+    { id: 'home', label: 'Início', icon: Home },
+    { id: 'history', label: 'Histórico', icon: History },
+    { id: 'alerts', label: 'Alertas', icon: Bell, badge: unreadAlertsCount },
+    { id: 'connections', label: 'Equipe', icon: MessageCircle },
+    { id: 'profile', label: 'Perfil', icon: User },
+  ] : [
     { id: 'home', label: 'Início', icon: Home },
     { id: 'history', label: 'Histórico', icon: History },
     { id: 'alerts', label: 'Alertas', icon: Bell, badge: unreadAlertsCount },

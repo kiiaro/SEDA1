@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Alert, Keyboard } from 'react-native';
 import type { User } from '@supabase/supabase-js';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import {
   FamilyMember,
   AlertItem,
   UserProfile,
+  ProfessionalConnection,
 } from './types';
 import {
   COLORS,
@@ -25,6 +26,7 @@ import { ScreenEntrance } from './components/Motion';
 import { SplashScreen } from './screens/SplashScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { LoginScreen } from './screens/LoginScreen';
+import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { RegisterScreen } from './screens/RegisterScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PressureScreen } from './screens/PressureScreen';
@@ -39,6 +41,10 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { EmergencyScreen } from './screens/EmergencyScreen';
 import { AppointmentsScreen } from './screens/AppointmentsScreen';
 import { NewAppointmentScreen } from './screens/NewAppointmentScreen';
+import { ProfessionalDashboardScreen } from './screens/ProfessionalDashboardScreen';
+import { ConnectionsScreen } from './screens/ConnectionsScreen';
+import { ChatScreen } from './screens/ChatScreen';
+import { acceptPatientInvite, createPatientInvite, loadProfessionalConnections } from './lib/professional';
 
 export default function App() {
   // Central application state
@@ -56,6 +62,13 @@ export default function App() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setScreen('reset_password');
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // User Profile & Data
   const [user, setUser] = useState<UserProfile>({
     name: 'Usuário', cpf: '', phone: '', birthDate: '', susCard: '', userType: 'Paciente',
@@ -66,6 +79,8 @@ export default function App() {
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [records, setRecords] = useState<HealthRecord[]>([]);
+  const [connections, setConnections] = useState<ProfessionalConnection[]>([]);
+  const [selectedConnection, setSelectedConnection] = useState<ProfessionalConnection | null>(null);
 
   // Elevated Health Vitals State
   const [pressSys, setPressSys] = useState<number>(120);
@@ -84,7 +99,11 @@ export default function App() {
       bloodType: '', emergencyContact: { name: '', phone: '', relation: '' }, conditions: [], medications: [],
     };
     if (!data.profile) await saveProfile(authUser.id, profile);
+    const userConnections = profile.userType === 'Paciente' || profile.userType === 'Profissional'
+      ? await loadProfessionalConnections()
+      : [];
     setUser(profile);
+    setConnections(userConnections);
     setRecords(data.records);
     setAppointments(data.appointments);
     setFamily(data.family);
@@ -119,6 +138,14 @@ export default function App() {
     await hydrate(data.user);
   };
 
+  const handleUpdatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    await supabase.auth.signOut();
+    setAuthNotice('Senha atualizada. Entre com a nova senha.');
+    setScreen('login');
+  };
+
   const handleRegister = async (email: string, password: string, profile: UserProfile) => {
     const { data, error } = await supabase.auth.signUp({
       email, password,
@@ -140,6 +167,7 @@ export default function App() {
     setSessionUserId(null);
     setAuthNotice('');
     setRecords([]); setAppointments([]); setFamily([]); setAlerts([]);
+    setConnections([]); setSelectedConnection(null);
     setScreen('login');
   };
 
@@ -148,11 +176,15 @@ export default function App() {
     setRefreshing(true);
     try {
       const data = await loadSedaData(sessionUserId);
+      const userConnections = user.userType === 'Paciente' || user.userType === 'Profissional'
+        ? await loadProfessionalConnections()
+        : [];
       if (data.profile) setUser(data.profile);
       setRecords(data.records);
       setAppointments(data.appointments);
       setFamily(data.family);
       setAlerts(data.alerts);
+      setConnections(userConnections);
     } catch (error) {
       Alert.alert('Não foi possível atualizar', error instanceof Error ? error.message : 'Tente novamente.');
     } finally { setRefreshing(false); }
@@ -254,6 +286,30 @@ export default function App() {
     setFamily((prev) => [...prev, newMember]);
   };
 
+  const handleCreatePatientInvite = async () => createPatientInvite();
+
+  const handleAcceptPatientInvite = async (code: string) => {
+    const connection = await acceptPatientInvite(code);
+    setConnections((current) => current.some((item) => item.id === connection.id) ? current : [connection, ...current]);
+  };
+
+  const handleRefreshConnections = useCallback(async () => {
+    const refreshed = await loadProfessionalConnections();
+    setConnections(refreshed);
+  }, []);
+
+  const handleRemoveConnection = async (connection: ProfessionalConnection) => {
+    const { error } = await supabase.from('seda_patient_connections').delete().eq('id', connection.id);
+    if (error) throw new Error(error.message);
+    setConnections((current) => current.filter((item) => item.id !== connection.id));
+  };
+
+  const handleOpenChat = (connection: ProfessionalConnection) => {
+    setSelectedConnection(connection);
+    setActiveTab('connections');
+    setScreen('chat');
+  };
+
   const handleNavTabChange = (targetScreen: Screen) => {
     setActiveTab(targetScreen);
     setScreen(targetScreen);
@@ -268,6 +324,7 @@ export default function App() {
     'profile',
     'dashboard',
     'appointments',
+    'connections',
   ].includes(screen);
 
   return (
@@ -291,12 +348,17 @@ export default function App() {
               onLogin={handleLogin}
               notice={authNotice}
               onResetPassword={async (email) => {
-                const { error } = await supabase.auth.resetPasswordForEmail(email);
+                const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+                const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
               }}
               onNavigate={(s) => setScreen(s)}
               dm={dm}
             />
+          )}
+
+          {screen === 'reset_password' && (
+            <ResetPasswordScreen onSave={handleUpdatePassword} onBack={() => setScreen('login')} dm={dm} />
           )}
 
           {screen === 'register' && (
@@ -307,7 +369,20 @@ export default function App() {
             />
           )}
 
-          {screen === 'home' && (
+          {screen === 'home' && user.userType === 'Profissional' && (
+            <ProfessionalDashboardScreen
+              user={user}
+              connections={connections}
+              appointments={appointments}
+              onNavigate={(target) => {
+                if (['home', 'connections', 'appointments', 'profile'].includes(target)) setActiveTab(target);
+                setScreen(target);
+              }}
+              dm={dm}
+            />
+          )}
+
+          {screen === 'home' && user.userType !== 'Profissional' && (
             <HomeScreen
               user={user}
               pressSys={pressSys}
@@ -317,7 +392,7 @@ export default function App() {
               appointments={appointments}
               records={records}
               onNavigate={(s) => {
-                if (['home', 'history', 'alerts', 'family', 'profile'].includes(s)) {
+                if (['home', 'history', 'alerts', 'family', 'profile', 'connections'].includes(s)) {
                   setActiveTab(s);
                 }
                 setScreen(s);
@@ -401,6 +476,34 @@ export default function App() {
             />
           )}
 
+          {screen === 'connections' && sessionUserId && (
+            <ConnectionsScreen
+              user={user}
+              userId={sessionUserId}
+              connections={connections}
+              onCreateInvite={handleCreatePatientInvite}
+              onAcceptInvite={handleAcceptPatientInvite}
+              onRefreshConnections={handleRefreshConnections}
+              onRemoveConnection={handleRemoveConnection}
+              onOpenChat={handleOpenChat}
+              onBack={() => {
+                setActiveTab('home');
+                setScreen('home');
+              }}
+              dm={dm}
+            />
+          )}
+
+          {screen === 'chat' && selectedConnection && sessionUserId && (
+            <ChatScreen
+              connection={selectedConnection}
+              userId={sessionUserId}
+              peerName={user.userType === 'Profissional' ? selectedConnection.patientName : selectedConnection.professionalName}
+              onBack={() => { setActiveTab('connections'); setScreen('connections'); }}
+              dm={dm}
+            />
+          )}
+
           {screen === 'profile' && (
             <ProfileScreen
               user={user}
@@ -457,6 +560,7 @@ export default function App() {
             onTabChange={handleNavTabChange}
             dm={dm}
             unreadAlertsCount={alerts.length}
+            userType={user.userType}
           />
         )}
       </MobileShell>

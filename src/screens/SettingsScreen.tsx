@@ -54,7 +54,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleHelp = () => {
-    Alert.alert('Ajuda', 'Para dúvidas sobre o aplicativo, consulte as instruções do repositório SEDA1.');
+    Alert.alert('Ajuda do SEDA', 'Consulte o tutorial de uso do SEDA para ver como registrar medições, acompanhar o histórico e organizar seus contatos.');
   };
 
   return (

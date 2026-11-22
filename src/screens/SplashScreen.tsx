@@ -23,7 +23,7 @@ export const SplashScreen: React.FC = () => {
             <ShieldCheck size={14} color="#FFFFFF" />
             <Text style={styles.susBadgeText}>Seu diário de saúde</Text>
           </View>
-          <Text style={styles.versionText}>SEDA Saúde</Text>
+          <Text style={styles.versionText}>SEDA</Text>
         </View>
 
         {/* Center Brand Identity */}
@@ -45,7 +45,7 @@ export const SplashScreen: React.FC = () => {
 
           <Text style={styles.brandTitle}>SEDA</Text>
           <Text style={styles.brandSubtitle}>
-            Sistema de Equilíbrio de Diabetes e Artérias
+            Seu diário de saúde
           </Text>
 
           <View style={styles.quoteCard}>
