@@ -90,7 +90,7 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
           <View style={[styles.inviteCard, { backgroundColor: dm.card, borderColor: dm.border }]}>
             <View style={styles.sectionHeading}><ShieldCheck size={19} color={COLORS.primary} /><Text style={[styles.heading, { color: dm.text }]}>Conectar profissional</Text></View>
             <Text style={[styles.copy, { color: dm.sub }]}>Digite o código que recebeu. Ao aceitar, a conta do profissional será adicionada à sua equipe e vocês poderão conversar no chat.</Text>
-            <TextInput value={inviteCode} onChangeText={setInviteCode} placeholder="Ex.: SEDA-A1B2C3D4E5" placeholderTextColor={dm.sub} autoCapitalize="characters" autoCorrect={false} style={[styles.input, { color: dm.text, borderColor: dm.border, backgroundColor: dm.inputBg }]} />
+            <TextInput value={inviteCode} onChangeText={setInviteCode} placeholder="Ex.: SEDA-XXXXXXXX-XXXXXXXX-XXXXXXXX" placeholderTextColor={dm.sub} autoCapitalize="characters" autoCorrect={false} style={[styles.input, { color: dm.text, borderColor: dm.border, backgroundColor: dm.inputBg }]} />
             <TouchableOpacity disabled={busy} onPress={acceptInvite} style={[styles.primaryButton, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Conectando...' : 'Aceitar convite'}</Text></TouchableOpacity>
           </View>
         ) : (
