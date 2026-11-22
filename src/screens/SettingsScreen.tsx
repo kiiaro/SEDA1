@@ -28,6 +28,7 @@ interface SettingsScreenProps {
   fontSize: FontSizeScale;
   setFontSize: (val: FontSizeScale) => void;
   onBack: () => void;
+  onSupport: () => void;
   dm: DarkModeTheme;
 }
 
@@ -37,6 +38,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   fontSize,
   setFontSize,
   onBack,
+  onSupport,
   dm,
 }) => {
   const [notifyMeds, setNotifyMeds] = useState(true);
@@ -54,7 +56,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleHelp = () => {
-    Alert.alert('Ajuda do SEDA', 'Consulte o tutorial de uso do SEDA para ver como registrar medições, acompanhar o histórico e organizar seus contatos.');
+    onSupport();
   };
 
   return (

@@ -18,7 +18,9 @@ export type Screen =
   | 'appointments'
   | 'new_appointment'
   | 'connections'
-  | 'chat';
+  | 'chat'
+  | 'edit_profile'
+  | 'support';
 
 export interface ProfessionalConnection {
   id: string;
