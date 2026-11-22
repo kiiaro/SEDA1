@@ -44,6 +44,8 @@ import { NewAppointmentScreen } from './screens/NewAppointmentScreen';
 import { ProfessionalDashboardScreen } from './screens/ProfessionalDashboardScreen';
 import { ConnectionsScreen } from './screens/ConnectionsScreen';
 import { ChatScreen } from './screens/ChatScreen';
+import { EditProfileScreen } from './screens/EditProfileScreen';
+import { SupportScreen } from './screens/SupportScreen';
 import { acceptPatientInvite, createPatientInvite, loadProfessionalConnections } from './lib/professional';
 
 export default function App() {
@@ -81,6 +83,7 @@ export default function App() {
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [connections, setConnections] = useState<ProfessionalConnection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<ProfessionalConnection | null>(null);
+  const [supportReturnTo, setSupportReturnTo] = useState<Screen>('profile');
 
   // Elevated Health Vitals State
   const [pressSys, setPressSys] = useState<number>(120);
@@ -310,6 +313,13 @@ export default function App() {
     setScreen('chat');
   };
 
+  const handleSaveProfile = async (profile: UserProfile) => {
+    if (!sessionUserId) throw new Error('Entre na sua conta para atualizar o perfil.');
+    await saveProfile(sessionUserId, profile);
+    setUser(profile);
+    setScreen('profile');
+  };
+
   const handleNavTabChange = (targetScreen: Screen) => {
     setActiveTab(targetScreen);
     setScreen(targetScreen);
@@ -507,10 +517,21 @@ export default function App() {
           {screen === 'profile' && (
             <ProfileScreen
               user={user}
-              onNavigate={(s) => setScreen(s)}
+              onNavigate={(s) => {
+                if (s === 'support') setSupportReturnTo('profile');
+                setScreen(s);
+              }}
               onLogout={handleLogout}
               dm={dm}
             />
+          )}
+
+          {screen === 'edit_profile' && (
+            <EditProfileScreen user={user} onSave={handleSaveProfile} onBack={() => setScreen('profile')} dm={dm} />
+          )}
+
+          {screen === 'support' && (
+            <SupportScreen onBack={() => setScreen(supportReturnTo)} dm={dm} />
           )}
 
           {screen === 'settings' && (
@@ -520,6 +541,7 @@ export default function App() {
               fontSize={fontSize}
               setFontSize={setFontSize}
               onBack={() => setScreen('profile')}
+              onSupport={() => { setSupportReturnTo('settings'); setScreen('support'); }}
               dm={dm}
             />
           )}

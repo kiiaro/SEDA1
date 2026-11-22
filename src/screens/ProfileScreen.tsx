@@ -15,6 +15,8 @@ import {
   ShieldAlert,
   Phone,
   UserRound,
+  MessageCircleQuestion,
+  ChevronRight,
 } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen, UserProfile } from '../types';
@@ -54,7 +56,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.editProfileBtn}
-          onPress={() => onNavigate('settings')}
+          onPress={() => onNavigate('edit_profile')}
         >
           <Text style={styles.editProfileBtnText}>Editar perfil</Text>
         </TouchableOpacity>
@@ -74,6 +76,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       {/* Main Content */}
       <View style={styles.body}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => onNavigate('support')}
+          style={[styles.supportCard, { backgroundColor: dm.card, borderColor: dm.border }]}
+        >
+          <View style={styles.supportIcon}><MessageCircleQuestion size={20} color="#FFFFFF" /></View>
+          <View style={styles.supportCopy}>
+            <Text style={[styles.supportTitle, { color: dm.text }]}>Precisa de ajuda?</Text>
+            <Text style={[styles.supportSubtitle, { color: dm.sub }]}>Acesse o assistente e as dúvidas frequentes</Text>
+          </View>
+          <ChevronRight size={18} color={dm.sub} />
+        </TouchableOpacity>
         {/* Conditions */}
         <View
           style={[
@@ -308,6 +322,11 @@ const styles = StyleSheet.create({
     marginTop: -20,
     gap: 12,
   },
+  supportCard: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderRadius: 18, padding: 13 },
+  supportIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: COLORS.primaryDk, alignItems: 'center', justifyContent: 'center' },
+  supportCopy: { flex: 1, gap: 3 },
+  supportTitle: { fontSize: 13, fontWeight: '900' },
+  supportSubtitle: { fontSize: 10, lineHeight: 14 },
   card: {
     borderRadius: 20,
     padding: 16,

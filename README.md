@@ -16,6 +16,8 @@ O esquema inicial está em [`supabase/schema.sql`](supabase/schema.sql), e as al
 - Painel profissional com agenda, pacientes conectados e atalhos para conversas.
 - Rede profissional composta somente por pacientes que aceitam um convite válido por sete dias.
 - Chat ao vivo entre paciente e profissional conectado, com histórico salvo e acesso protegido por RLS.
+- Edição de dados pessoais e do contato de emergência no perfil, separada das preferências visuais.
+- Central de suporte no perfil e nas configurações, com respostas prontas, dúvidas frequentes e busca por assunto.
 - Registros e gráficos de medições, consultas, contatos e alertas salvos por conta.
 - Consulta registrada com data e horário válidos; mapa e link de teleconsulta abrem apenas quando cadastrados.
 - Entrada por texto com prévia dos valores identificados. Não há reconhecimento de voz nativo.
