@@ -16,7 +16,26 @@ export type Screen =
   | 'settings'
   | 'emergency'
   | 'appointments'
-  | 'new_appointment';
+  | 'new_appointment'
+  | 'connections'
+  | 'chat';
+
+export interface ProfessionalConnection {
+  id: string;
+  professionalId: string;
+  patientId: string;
+  professionalName: string;
+  patientName: string;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  connectionId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+}
 
 export type FontSizeScale = 'normal' | 'large' | 'xl';
 
