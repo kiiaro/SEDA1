@@ -82,7 +82,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: dm.bg }]}>
       <BackHeader
-        title="Cadastro SEDA"
+        title="Criar conta SEDA"
         subtitle="Crie sua conta segura"
         onBack={onBack}
       />

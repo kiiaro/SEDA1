@@ -1,4 +1,4 @@
--- SEDA1: dados privados por conta autenticada.
+-- SEDA: dados privados por conta autenticada.
 create table if not exists public.seda_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   payload jsonb not null default '{}'::jsonb check (jsonb_typeof(payload) = 'object'),

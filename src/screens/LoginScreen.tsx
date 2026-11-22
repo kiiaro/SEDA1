@@ -105,7 +105,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
         </View>
 
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: dm.text }]}>Acesse sua Conta</Text>
+          <Text style={[styles.title, { color: dm.text }]}>Acesse o SEDA</Text>
           <Text style={[styles.subtitle, { color: dm.sub }]}>
             Entre com seu e-mail e senha para acessar seus dados
           </Text>
