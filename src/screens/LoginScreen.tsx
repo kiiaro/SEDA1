@@ -6,29 +6,33 @@ import {
   StyleSheet,
   ScrollView,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Eye, EyeOff, Heart, ArrowRight } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, Screen } from '../types';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
 import { useInputVisibility } from '../components/useInputVisibility';
+import { friendlyAuthError } from '../lib/googleAuth';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onResetPassword: (email: string) => Promise<void>;
+  onGoogleAuth: () => Promise<void>;
   notice?: string;
   onNavigate: (screen: Screen) => void;
   dm: DarkModeTheme;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPassword, notice, onNavigate, dm }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPassword, onGoogleAuth, notice, onNavigate, dm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'pass' | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [googleBusy, setGoogleBusy] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const { width } = useWindowDimensions();
   const compact = width < 380;
@@ -42,7 +46,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
     setBusy(true);
     setMessage('');
     try { await onLogin(email.trim().toLowerCase(), password); }
-    catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível entrar.'); }
+    catch (error) { setMessage(friendlyAuthError(error)); }
     finally { setBusy(false); }
   };
 
@@ -52,7 +56,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
     setBusy(true);
     setMessage('');
     try { await onResetPassword(email.trim().toLowerCase()); setMessage('Se este e-mail estiver cadastrado, enviaremos um link. Abra-o neste aparelho e confira também a pasta de spam.'); }
-    catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível solicitar o link.'); }
+    catch (error) { setMessage(friendlyAuthError(error)); }
     finally { setBusy(false); }
   };
 
@@ -66,19 +70,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
     >
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F']}
+        colors={[COLORS.secondary, '#FFF0AA']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.header, compact && styles.headerCompact]}
       >
-        <View style={styles.logoRow}>
-          <View style={styles.heartBox}>
-            <Heart size={20} color="#FFFFFF" fill="#FFFFFF" />
-          </View>
-          <Text style={styles.brandTitle}>SEDA</Text>
-        </View>
+        <View style={styles.logoRow}><Image source={require('../../assets/seda-logo.png')} resizeMode="contain" style={styles.logoImage} accessibilityLabel="SEDA" /></View>
         <Text style={styles.brandSubtitle}>
-          Acompanhe suas medições em um só lugar
+          Cuidado que aproxima
         </Text>
       </LinearGradient>
 
@@ -95,7 +94,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
       >
         {/* Progress Strip */}
         <View style={styles.progressRow}>
-          <View style={[styles.progressBar, { backgroundColor: COLORS.primary }]} />
+          <View style={[styles.progressBar, { backgroundColor: COLORS.primaryDk }]} />
           <View
             style={[
               styles.progressBar,
@@ -198,10 +197,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
           onPress={handleLogin}
           disabled={busy}
           activeOpacity={0.8}
-          style={[styles.loginBtn, { backgroundColor: COLORS.primary }]}
+          style={[styles.loginBtn, { backgroundColor: COLORS.primaryDk }]}
         >
           <Text style={styles.loginBtnText}>{busy ? 'Aguarde...' : 'Entrar no SEDA'}</Text>
           <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <View style={styles.dividerRow}><View style={[styles.dividerLine, { backgroundColor: dm.border }]} /><Text style={styles.dividerText}>ou</Text><View style={[styles.dividerLine, { backgroundColor: dm.border }]} /></View>
+        <TouchableOpacity style={[styles.googleButton, { borderColor: dm.border, backgroundColor: dm.card }]} disabled={googleBusy || busy} onPress={async () => {
+          setGoogleBusy(true); setMessage('');
+          try { await onGoogleAuth(); } catch (error) { setMessage(friendlyAuthError(error)); }
+          finally { setGoogleBusy(false); }
+        }} accessibilityRole="button">
+          <Text style={styles.googleMark}>G</Text><Text style={[styles.googleText, { color: dm.text }]}>{googleBusy ? 'Conectando...' : 'Continuar com Google'}</Text>
         </TouchableOpacity>
 
         {message || notice ? <Text style={[styles.feedback, { color: dm.text, backgroundColor: dm.inputBg, borderColor: dm.border }]}>{message || notice}</Text> : null}
@@ -230,35 +238,28 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    paddingTop: 36,
-    paddingBottom: 48,
+    paddingTop: 24,
+    paddingBottom: 38,
     paddingHorizontal: 24,
     alignItems: 'center',
   },
-  headerCompact: { paddingTop: 22, paddingBottom: 38, paddingHorizontal: 16 },
+  headerCompact: { paddingTop: 16, paddingBottom: 32, paddingHorizontal: 16 },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: 6,
   },
-  heartBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  logoImage: { width: 145, height: 74 },
   brandTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: COLORS.primaryDk,
     letterSpacing: -1,
   },
   brandSubtitle: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: COLORS.primaryDk,
     fontWeight: '600',
   },
   card: {
@@ -392,4 +393,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   feedback: { marginTop: 16, padding: 12, borderRadius: 12, borderWidth: 1, fontSize: 13, lineHeight: 19 },
+  googleButton: { paddingVertical: 13, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
+  googleMark: { color: '#4285F4', fontSize: 18, fontWeight: '900' },
+  googleText: { fontSize: 13, fontWeight: '800' },
 });

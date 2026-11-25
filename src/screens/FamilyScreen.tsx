@@ -66,8 +66,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
       phone: newPhone,
       avatarBg: newRole === 'Profissional' ? COLORS.primary : COLORS.accent,
       initials: initials || 'CD',
-      status: 'online',
-      lastSeen: 'Adicionado agora',
+      status: 'away',
+      lastSeen: 'Contato cadastrado',
     };
 
     try {
@@ -99,7 +99,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
         title="Rede de Cuidado"
         subtitle="Contatos cadastrados por você"
         onBack={onBack}
-        bgGradient={['#0F766E', '#7CC9BE']}
+        bgGradient={[COLORS.primaryDk, COLORS.primary]}
         rightElement={
           <TouchableOpacity
             onPress={() => setShowAddModal(true)}
@@ -113,35 +113,33 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
       />
 
       <View style={styles.content}>
+        {family.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: dm.card, borderColor: dm.border }]}>
+            <View style={styles.emptyIcon}><UserPlus size={21} color={COLORS.primaryDk} /></View>
+            <Text style={[styles.emptyTitle, { color: dm.text }]}>Monte sua rede de apoio</Text>
+            <Text style={[styles.emptyCopy, { color: dm.sub }]}>Cadastre pessoas de confiança para encontrar rapidamente o telefone e iniciar uma ligação ou conversa pelo WhatsApp.</Text>
+            <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.emptyAction}><Plus size={17} color={COLORS.primaryDk} /><Text style={styles.emptyActionText}>Adicionar primeiro contato</Text></TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Info Banner */}
-        <View
+        {family.length > 0 ? <View
           style={[
             styles.banner,
             {
-              backgroundColor: 'rgba(124, 201, 190, 0.15)',
-              borderColor: 'rgba(124, 201, 190, 0.3)',
+              backgroundColor: 'rgba(110, 171, 198, 0.12)',
+              borderColor: 'rgba(110, 171, 198, 0.28)',
             },
           ]}
         >
-          <ShieldCheck size={24} color="#0F766E" />
+          <ShieldCheck size={24} color={COLORS.primaryDk} />
           <Text style={styles.bannerText}>
-            Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
-            <Text style={{ fontWeight: '800', color: '#0F766E' }}>
-              Familiares e profissionais
-            </Text>{' '}
-            recebem alerta imediato.
+            Esta lista facilita o contato direto. Toque no telefone para ligar ou no ícone de mensagem para abrir o WhatsApp. Ela não envia alertas automáticos.
           </Text>
-        </View>
+        </View> : null}
 
         {/* Member Cards */}
         {family.map((member, index) => {
-          const dotColor =
-            member.status === 'online'
-              ? COLORS.success
-              : member.status === 'away'
-              ? COLORS.warn
-              : COLORS.danger;
-
           return (
             <React.Fragment key={member.id}>
               <View
@@ -161,9 +159,6 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                     >
                       <Text style={styles.avatarText}>{member.initials}</Text>
                     </View>
-                    <View
-                      style={[styles.statusDot, { backgroundColor: dotColor }]}
-                    />
                   </View>
 
                   {/* Info */}
@@ -292,6 +287,8 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
               </TouchableOpacity>
             </View>
 
+            <Text style={[styles.modalHint, { color: dm.sub }]}>Este contato fica na sua rede de apoio. Para usar o chat do SEDA, a outra pessoa precisa ter uma conta e aceitar um convite de conexão.</Text>
+
             <View style={styles.modalBody}>
               <View style={styles.formItem}>
                 <Text style={[styles.modalLabel, { color: dm.sub }]}>
@@ -346,7 +343,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                       onPress={() => setNewRole('Familiar')}
                       style={[
                         styles.roleToggleBtn,
-                        newRole === 'Familiar' && { backgroundColor: COLORS.primary },
+                        newRole === 'Familiar' && { backgroundColor: COLORS.primaryDk },
                       ]}
                     >
                       <Text
@@ -363,7 +360,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                       onPress={() => setNewRole('Profissional')}
                       style={[
                         styles.roleToggleBtn,
-                        newRole === 'Profissional' && { backgroundColor: COLORS.primary },
+                        newRole === 'Profissional' && { backgroundColor: COLORS.primaryDk },
                       ]}
                     >
                       <Text
@@ -405,7 +402,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                 activeOpacity={0.8}
                 style={[
                   styles.modalSubmitBtn,
-                  { backgroundColor: COLORS.primary },
+                  { backgroundColor: COLORS.primaryDk },
                 ]}
               >
                 <Text style={styles.modalSubmitText}>
@@ -452,8 +449,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     lineHeight: 16,
-    color: '#042F2E',
+    color: COLORS.primaryDk,
   },
+  emptyCard: { alignItems: 'center', borderWidth: 1, borderRadius: 20, padding: 20, gap: 9, marginBottom: 14 },
+  emptyIcon: { width: 46, height: 46, borderRadius: 16, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', textAlign: 'center' },
+  emptyCopy: { fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  emptyAction: { minHeight: 42, paddingHorizontal: 14, borderRadius: 13, backgroundColor: COLORS.secondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 2 },
+  emptyActionText: { color: COLORS.primaryDk, fontSize: 12, fontWeight: '800' },
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -589,6 +592,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  modalHint: { fontSize: 11, lineHeight: 16, marginBottom: 10 },
   modalCloseBtn: {
     padding: 4,
   },

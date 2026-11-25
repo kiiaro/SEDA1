@@ -48,7 +48,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     >
       {/* Header with Big Avatar */}
       <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F', '#5E8FC0']}
+        colors={['#253E4C', '#355D6E', '#47778D']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryDk,
     borderWidth: 4,
     borderColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center',

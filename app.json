@@ -3,13 +3,14 @@
     "name": "SEDA",
     "slug": "seda",
     "version": "1.6.0",
+    "scheme": "seda",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#1E3A5F"
+      "backgroundColor": "#FFE16D"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,14 +22,22 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E3A5F"
+        "backgroundColor": "#FFE16D"
       }
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permita que o SEDA leia o QR de conexão com seu profissional.",
+          "recordAudioAndroid": false
+        }
+      ]
     ]
   }
 }

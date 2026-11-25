@@ -46,7 +46,7 @@ export const VoiceScreen: React.FC<Props> = ({ onSaveRecognizedRecord, onBack, d
   };
 
   return <ScrollView ref={scrollRef} style={{ backgroundColor: dm.bg }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-    <BackHeader title="Registro por Texto" subtitle="Descreva sua medição para preencher os valores" onBack={onBack} bgGradient={['#1E3A5F', '#3D6E9F']} />
+    <BackHeader title="Registro por Texto" subtitle="Descreva sua medição para preencher os valores" onBack={onBack} bgGradient={['#253E4C', '#355D6E']} />
     <View style={styles.body}>
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <View style={styles.heading}><MessageSquare size={20} color={COLORS.primary} /><Text style={[styles.title, { color: dm.text, fontSize: 18 * fontSizeScale }]}>Escreva sua medição</Text></View>

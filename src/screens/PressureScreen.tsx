@@ -83,7 +83,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
       ? ['#B91C1C', '#E45454']
       : pressSys >= 130
       ? ['#D97706', '#F4B740']
-      : ['#1E3A5F', '#3D6E9F'];
+      : ['#253E4C', '#355D6E'];
 
   const handleSave = async () => {
     if (isSaving || isSaved) return;
@@ -281,7 +281,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
             <View style={styles.chartLegend}>
               <View style={styles.legendItem}>
                 <View
-                  style={[styles.legendDot, { backgroundColor: COLORS.primary }]}
+                  style={[styles.legendDot, { backgroundColor: COLORS.primaryDk }]}
                 />
                 <Text style={[styles.legendText, { color: dm.sub }]}>Sistólica</Text>
               </View>

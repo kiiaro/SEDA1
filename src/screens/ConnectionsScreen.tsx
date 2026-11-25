@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { MessageCircle, Plus, ShieldCheck, Trash2, UserRound } from 'lucide-react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { MessageCircle, Plus, ShieldCheck, Trash2, UserRound, ScanLine, X } from 'lucide-react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import QRCode from 'react-native-qrcode-svg';
 import { BackHeader } from '../components/BackHeader';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
 import { COLORS } from '../constants/theme';
@@ -24,6 +26,9 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
   const [inviteCode, setInviteCode] = useState('');
   const [newCode, setNewCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
   const isProfessional = user.userType === 'Profissional';
   const peerName = (connection: ProfessionalConnection) => isProfessional ? connection.patientName : connection.professionalName;
 
@@ -45,8 +50,8 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
     finally { setBusy(false); }
   };
 
-  const acceptInvite = () => {
-    if (!inviteCode.trim()) { Alert.alert('Digite o código', 'Peça o código de conexão ao profissional.'); return; }
+  const confirmInvite = (code = inviteCode) => {
+    if (!code.trim()) { Alert.alert('Digite o código', 'Peça o código de conexão ao profissional.'); return; }
     Alert.alert(
       'Conectar com profissional?',
       'Ao continuar, você autoriza o vínculo com esta conta e poderá conversar pelo chat do SEDA. Você pode remover a conexão depois.',
@@ -54,12 +59,30 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
         { text: 'Agora não', style: 'cancel' },
         { text: 'Conectar', onPress: async () => {
           setBusy(true);
-          try { await onAcceptInvite(inviteCode); setInviteCode(''); Alert.alert('Conexão criada', 'O profissional já aparece na sua equipe de cuidado.'); }
+          try { await onAcceptInvite(code.trim()); setInviteCode(''); Alert.alert('Conexão criada', 'O profissional já aparece na sua equipe de cuidado.'); }
           catch (error) { Alert.alert('Não foi possível conectar', error instanceof Error ? error.message : 'Confira se o código está correto e dentro da validade.'); }
           finally { setBusy(false); }
         } },
       ],
     );
+  };
+
+  const openScanner = async () => {
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) { Alert.alert('Câmera não autorizada', 'Você pode permitir o acesso nas configurações do aparelho ou digitar o código manualmente.'); return; }
+    }
+    setScanned(false);
+    setScannerOpen(true);
+  };
+
+  const handleQrScanned = ({ data }: { data: string }) => {
+    if (scanned) return;
+    setScanned(true);
+    setScannerOpen(false);
+    const code = data.trim();
+    setInviteCode(code);
+    confirmInvite(code);
   };
 
   const removeConnection = (connection: ProfessionalConnection) => {
@@ -74,13 +97,13 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: dm.bg }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <BackHeader title={isProfessional ? 'Pacientes' : 'Equipe de cuidado'} subtitle={isProfessional ? 'Conexões aceitas e chats' : 'Profissionais conectados a você'} onBack={onBack} bgGradient={['#143454', '#315F83', '#55A99C']} />
+      <BackHeader title={isProfessional ? 'Pacientes' : 'Equipe de cuidado'} subtitle={isProfessional ? 'Conexões aceitas e chats' : 'Profissionais conectados a você'} onBack={onBack} bgGradient={['#253E4C', '#355D6E', '#47778D']} />
       <View style={styles.body}>
         {isProfessional ? (
           <View style={[styles.inviteCard, { backgroundColor: dm.card, borderColor: dm.border }]}>
             <View style={styles.sectionHeading}><UserRound size={19} color={COLORS.primary} /><Text style={[styles.heading, { color: dm.text }]}>Adicionar paciente</Text></View>
             <Text style={[styles.copy, { color: dm.sub }]}>Gere um código e compartilhe com o paciente. Ele precisa aceitá-lo na própria conta para conectar e iniciar o chat.</Text>
-            {newCode ? <View style={styles.codeBox}><Text style={styles.codeLabel}>Código válido por 7 dias</Text><Text selectable style={styles.codeValue}>{newCode}</Text></View> : null}
+            {newCode ? <View style={styles.codeBox}><Text style={styles.codeLabel}>QR de conexão · válido por 7 dias</Text><View style={styles.qrCard}><QRCode value={newCode} size={176} color={COLORS.primaryDk} backgroundColor="#FFFFFF" /></View><Text selectable style={styles.codeValue}>{newCode}</Text><Text style={styles.codeHint}>O paciente pode ler este QR ou digitar o código.</Text></View> : null}
             <TouchableOpacity disabled={busy} onPress={createInvite} style={[styles.primaryButton, busy && styles.disabled]}>
               <Plus size={17} color="#FFF" /><Text style={styles.primaryButtonText}>{busy ? 'Aguarde...' : newCode ? 'Gerar outro código' : 'Gerar código de conexão'}</Text>
             </TouchableOpacity>
@@ -90,8 +113,10 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
           <View style={[styles.inviteCard, { backgroundColor: dm.card, borderColor: dm.border }]}>
             <View style={styles.sectionHeading}><ShieldCheck size={19} color={COLORS.primary} /><Text style={[styles.heading, { color: dm.text }]}>Conectar profissional</Text></View>
             <Text style={[styles.copy, { color: dm.sub }]}>Digite o código que recebeu. Ao aceitar, a conta do profissional será adicionada à sua equipe e vocês poderão conversar no chat.</Text>
+            <TouchableOpacity disabled={busy} onPress={openScanner} style={[styles.scanButton, { borderColor: dm.border, backgroundColor: dm.inputBg }]}><ScanLine size={17} color={COLORS.primaryDk} /><Text style={styles.scanButtonText}>Ler QR do profissional</Text></TouchableOpacity>
+            <Text style={[styles.codeLabel, { color: dm.sub, textAlign: 'center' }]}>ou digite o código</Text>
             <TextInput value={inviteCode} onChangeText={setInviteCode} placeholder="Ex.: SEDA-XXXXXXXX-XXXXXXXX-XXXXXXXX" placeholderTextColor={dm.sub} autoCapitalize="characters" autoCorrect={false} style={[styles.input, { color: dm.text, borderColor: dm.border, backgroundColor: dm.inputBg }]} />
-            <TouchableOpacity disabled={busy} onPress={acceptInvite} style={[styles.primaryButton, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Conectando...' : 'Aceitar convite'}</Text></TouchableOpacity>
+            <TouchableOpacity disabled={busy} onPress={() => confirmInvite()} style={[styles.primaryButton, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Conectando...' : 'Aceitar convite'}</Text></TouchableOpacity>
           </View>
         ) : (
           <View style={[styles.inviteCard, { backgroundColor: dm.card, borderColor: dm.border }]}><Text style={[styles.copy, { color: dm.sub }]}>As conexões com profissionais estão disponíveis para contas de pacientes.</Text></View>
@@ -109,10 +134,17 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
           </View>
         ))}
       </View>
+      <Modal visible={scannerOpen} animationType="slide" onRequestClose={() => setScannerOpen(false)}>
+        <View style={styles.scannerScreen}>
+          <View style={styles.scannerHeader}><View><Text style={styles.scannerTitle}>Ler QR de conexão</Text><Text style={styles.scannerCopy}>Aponte a câmera para o código do profissional.</Text></View><TouchableOpacity onPress={() => setScannerOpen(false)} style={styles.scannerClose}><X size={22} color="#FFF" /></TouchableOpacity></View>
+          <CameraView style={styles.camera} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={handleQrScanned} />
+          <Text style={styles.scannerFoot}>O vínculo só será criado depois da sua confirmação.</Text>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 }, content: { paddingBottom: 24 }, body: { padding: 16, gap: 12 }, inviteCard: { borderWidth: 1, borderRadius: 20, padding: 16, gap: 10 }, sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 }, heading: { fontSize: 14, fontWeight: '900' }, copy: { fontSize: 11, lineHeight: 17 }, input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, fontWeight: '700', letterSpacing: 0.4 }, primaryButton: { minHeight: 46, borderRadius: 14, backgroundColor: COLORS.primaryDk, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 14 }, primaryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' }, disabled: { opacity: 0.6 }, codeBox: { backgroundColor: '#EAF2F8', borderRadius: 14, padding: 13, alignItems: 'center', gap: 3 }, codeLabel: { fontSize: 10, color: '#64748B', fontWeight: '700' }, codeValue: { fontSize: 22, color: COLORS.primaryDk, fontWeight: '900', letterSpacing: 1.5 }, privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 }, privacyText: { flex: 1, fontSize: 10, lineHeight: 15 }, listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }, count: { fontSize: 12, fontWeight: '800' }, emptyCard: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 18, padding: 20 }, emptyTitle: { fontSize: 13, fontWeight: '800' }, connectionCard: { borderWidth: 1, borderRadius: 18, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }, avatar: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#DDEAF5', alignItems: 'center', justifyContent: 'center' }, avatarText: { color: COLORS.primaryDk, fontSize: 12, fontWeight: '900' }, connectionInfo: { flex: 1, gap: 3 }, connectionName: { fontSize: 12, fontWeight: '800' }, connectionMeta: { fontSize: 10 }, chatButton: { width: 36, height: 36, borderRadius: 13, backgroundColor: COLORS.primaryDk, justifyContent: 'center', alignItems: 'center' }, removeButton: { width: 34, height: 36, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  container: { flex: 1 }, content: { paddingBottom: 24 }, body: { padding: 16, gap: 12 }, inviteCard: { borderWidth: 1, borderRadius: 20, padding: 16, gap: 10 }, sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 }, heading: { fontSize: 14, fontWeight: '900' }, copy: { fontSize: 11, lineHeight: 17 }, input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, fontWeight: '700', letterSpacing: 0.4 }, primaryButton: { minHeight: 46, borderRadius: 14, backgroundColor: COLORS.primaryDk, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingHorizontal: 14 }, primaryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' }, disabled: { opacity: 0.6 }, codeBox: { backgroundColor: '#F4F6F4', borderRadius: 14, padding: 13, alignItems: 'center', gap: 7 }, codeLabel: { fontSize: 10, color: '#64748B', fontWeight: '700' }, qrCard: { backgroundColor: '#FFF', padding: 10, borderRadius: 12 }, codeValue: { fontSize: 15, color: COLORS.primaryDk, fontWeight: '900', letterSpacing: 1.2, textAlign: 'center' }, codeHint: { fontSize: 10, color: '#60727B', textAlign: 'center' }, scanButton: { minHeight: 46, borderWidth: 1, borderRadius: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, scanButtonText: { color: COLORS.primaryDk, fontWeight: '800', fontSize: 12 }, scannerScreen: { flex: 1, backgroundColor: COLORS.primaryDk, padding: 20, paddingTop: 56, gap: 20 }, scannerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, scannerTitle: { color: '#FFF', fontSize: 20, fontWeight: '800' }, scannerCopy: { color: '#D8E5E9', fontSize: 12, marginTop: 4 }, scannerClose: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)' }, camera: { flex: 1, borderRadius: 22, overflow: 'hidden' }, scannerFoot: { textAlign: 'center', color: '#D8E5E9', fontSize: 11, marginBottom: 14 }, privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 }, privacyText: { flex: 1, fontSize: 10, lineHeight: 15 }, listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }, count: { fontSize: 12, fontWeight: '800' }, emptyCard: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 18, padding: 20 }, emptyTitle: { fontSize: 13, fontWeight: '800' }, connectionCard: { borderWidth: 1, borderRadius: 18, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }, avatar: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#DDEAF5', alignItems: 'center', justifyContent: 'center' }, avatarText: { color: COLORS.primaryDk, fontSize: 12, fontWeight: '900' }, connectionInfo: { flex: 1, gap: 3 }, connectionName: { fontSize: 12, fontWeight: '800' }, connectionMeta: { fontSize: 10 }, chatButton: { width: 36, height: 36, borderRadius: 13, backgroundColor: COLORS.primaryDk, justifyContent: 'center', alignItems: 'center' }, removeButton: { width: 34, height: 36, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
 });

@@ -39,7 +39,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
     >
       {/* Header */}
       <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F']}
+        colors={['#253E4C', '#355D6E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -78,7 +78,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
                 <Text
                   style={[
                     styles.filterPillText,
-                    { color: isSelected ? '#1E3A5F' : '#FFFFFF' },
+                    { color: isSelected ? '#253E4C' : '#FFFFFF' },
                   ]}
                 >
                   {opt.label}

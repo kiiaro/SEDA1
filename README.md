@@ -39,3 +39,8 @@ Execute `npm run lint`, `npx expo-doctor` e `npm run build`. O workflow do APK e
 O fluxo [Android APK](.github/workflows/android-apk.yml) gera um APK instalável em **Actions → Android APK → Artifacts → seda-android-apk** após um push na branch de desenvolvimento ou em `main`. Baixe o arquivo ZIP do artefato, extraia o `.apk` e abra-o no celular Android para instalar.
 
 Este APK de prévia usa a assinatura de desenvolvimento gerada no build. Para distribuir atualizações sem reinstalar o app ou publicá-lo na Play Store, configure uma chave de assinatura estável. O arquivo `eas.json` também está pronto para `eas build -p android --profile preview` quando uma conta Expo estiver conectada.
+# Autenticação Google e e-mails de acesso
+
+O app contém o fluxo OAuth do Google e o retorno usa o esquema Android/iOS `seda://auth/callback`. Para habilitar o login real, configure o provedor Google no painel do Supabase e informe as credenciais OAuth criadas no Google Cloud. Adicione também `seda://auth/callback` à lista de URLs de redirecionamento permitidas do Auth. Expo Go usa um endereço temporário diferente; teste o retorno OAuth em um build instalado.
+
+O envio de confirmação e recuperação por e-mail usa a entrega de e-mail configurada em Supabase Auth. Para produção, configure SMTP próprio em Authentication → SMTP Settings, teste entrega e domínio e revise os limites em Authentication → Rate Limits. Não desative confirmação de e-mail como forma de contornar bloqueios. Nenhuma senha ou segredo de provedor deve ser incluído no app ou neste repositório.

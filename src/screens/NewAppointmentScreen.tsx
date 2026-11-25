@@ -108,7 +108,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
         title="Registrar Consulta"
         subtitle="Guarde aqui os dados de uma consulta já marcada"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        bgGradient={['#253E4C', '#355D6E']}
       />
 
       <View style={styles.form}>
@@ -370,7 +370,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.85}
-          style={[styles.submitBtn, { backgroundColor: COLORS.primary }]}
+          style={[styles.submitBtn, { backgroundColor: COLORS.primaryDk }]}
         >
           <Text style={styles.submitBtnText}>{saving ? 'Salvando...' : 'Salvar Consulta'}</Text>
           <ArrowRight size={18} color="#FFFFFF" />

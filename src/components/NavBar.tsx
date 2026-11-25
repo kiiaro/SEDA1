@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 3,
     borderRadius: 2,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryDk,
     marginTop: 2,
   },
 });

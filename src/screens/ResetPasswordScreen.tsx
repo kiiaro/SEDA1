@@ -23,7 +23,7 @@ export function ResetPasswordScreen({ onSave, onBack, dm }: { onSave: (password:
     finally { setBusy(false); }
   };
   return <View style={[styles.page, { backgroundColor: dm.bg }]}>
-    <BackHeader title="Nova senha" subtitle="Escolha uma senha para sua conta" onBack={onBack} bgGradient={['#1E3A5F', '#3D6E9F']} />
+    <BackHeader title="Nova senha" subtitle="Escolha uma senha para sua conta" onBack={onBack} bgGradient={['#253E4C', '#355D6E']} />
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <Text style={[styles.title, { color: dm.text }]}>Redefina sua senha</Text>
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
   input: { minHeight: 50, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingRight: 52, fontSize: 16 },
   eye: { position: 'absolute', right: 8, minWidth: 40, minHeight: 40, justifyContent: 'center', alignItems: 'center' },
   feedback: { padding: 12, borderWidth: 1, borderRadius: 12, fontSize: 13, lineHeight: 18 },
-  button: { minHeight: 52, borderRadius: 15, backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  button: { minHeight: 52, borderRadius: 15, backgroundColor: COLORS.primaryDk, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { color: '#fff', fontWeight: '800', fontSize: 15 }, footer: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
 });

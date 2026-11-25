@@ -46,7 +46,7 @@ export const SupportScreen: React.FC<Props> = ({ onBack, dm }) => {
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: dm.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <BackHeader title="Ajuda e suporte" subtitle="Respostas rápidas sobre o SEDA" onBack={onBack} bgGradient={['#143454', '#315F83', '#55A99C']} />
+      <BackHeader title="Ajuda e suporte" subtitle="Respostas rápidas sobre o SEDA" onBack={onBack} bgGradient={['#253E4C', '#355D6E', '#47778D']} />
       <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
         {messages.map((message) => (
           <View key={message.id} style={[styles.row, message.from === 'user' ? styles.userRow : styles.botRow]}>

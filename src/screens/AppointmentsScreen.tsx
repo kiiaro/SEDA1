@@ -109,7 +109,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
           title="Minhas Consultas"
           subtitle="Agendamentos presenciais e teleconsultas"
           onBack={onBack}
-          bgGradient={['#1E3A5F', '#3D6E9F']}
+          bgGradient={['#253E4C', '#355D6E']}
           rightElement={
             <TouchableOpacity
               onPress={() => onNavigate('new_appointment')}
@@ -126,7 +126,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
           {/* Highlight Next Appointment */}
           {nextAppt && (
             <LinearGradient
-              colors={['#3D6E9F', '#5E8FC0']}
+              colors={['#355D6E', '#6EABC6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.highlightCard}
@@ -160,7 +160,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
               activeOpacity={0.7}
               style={[
                 styles.tabBtn,
-                activeTab === 'upcoming' && { backgroundColor: COLORS.primary },
+                activeTab === 'upcoming' && { backgroundColor: COLORS.primaryDk },
               ]}
             >
               <Text
@@ -178,7 +178,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
               activeOpacity={0.7}
               style={[
                 styles.tabBtn,
-                activeTab === 'past' && { backgroundColor: COLORS.primary },
+                activeTab === 'past' && { backgroundColor: COLORS.primaryDk },
               ]}
             >
               <Text
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#3D6E9F',
+    backgroundColor: '#355D6E',
   },
   virtualBtnText: {
     color: '#FFFFFF',

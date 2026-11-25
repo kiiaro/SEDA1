@@ -62,9 +62,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       badge: 'Cuidado Integrado',
       renderIcon: () => (
         <Svg width={160} height={160} viewBox="0 0 200 200">
-          <Circle cx="100" cy="100" r="85" fill="#5E8FC0" fillOpacity={0.12} />
-          <Circle cx="100" cy="100" r="65" fill="#5E8FC0" fillOpacity={0.2} />
-          <Circle cx="100" cy="100" r="48" fill="#5E8FC0" />
+          <Circle cx="100" cy="100" r="85" fill="#6EABC6" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#6EABC6" fillOpacity={0.2} />
+          <Circle cx="100" cy="100" r="48" fill="#6EABC6" />
           <Rect x="91" y="75" width="18" height="32" rx="9" fill="#FFFFFF" />
           <Path
             d="M80 95 C80 110 120 110 120 95"

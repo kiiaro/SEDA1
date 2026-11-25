@@ -69,7 +69,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         title="Configurações & Acessibilidade"
         subtitle="Ajustes visuais, tamanho de fonte e alertas"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        bgGradient={['#253E4C', '#355D6E']}
       />
 
       <View style={styles.content}>
