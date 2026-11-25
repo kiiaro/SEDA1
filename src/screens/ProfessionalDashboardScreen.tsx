@@ -22,10 +22,10 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({ user, connections
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: dm.bg }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <BackHeader title="Painel profissional" subtitle={`Olá, ${user.name.split(' ')[0]}`} onBack={() => onNavigate('profile')} bgGradient={['#143454', '#315F83', '#55A99C']} />
+      <BackHeader title="Painel profissional" subtitle={`Olá, ${user.name.split(' ')[0]}`} onBack={() => onNavigate('profile')} bgGradient={['#253E4C', '#355D6E', '#47778D']} />
 
       <View style={styles.body}>
-        <LinearGradient colors={['#1E3A5F', '#3D6E9F', '#5E8FC0']} style={styles.hero}>
+        <LinearGradient colors={['#253E4C', '#355D6E', '#47778D']} style={styles.hero}>
           <View style={styles.heroIcon}><ShieldCheck size={22} color="#FFFFFF" /></View>
           <Text style={styles.heroTitle}>Seu cuidado, em um só lugar</Text>
           <Text style={styles.heroCopy}>Acompanhe sua rede de pacientes e converse com quem aceitou seu convite.</Text>

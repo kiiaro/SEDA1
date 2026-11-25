@@ -14,15 +14,18 @@ import { DarkModeTheme, UserProfile } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { MotionButton as TouchableOpacity } from '../components/Motion';
 import { useInputVisibility } from '../components/useInputVisibility';
+import { friendlyAuthError } from '../lib/googleAuth';
 
 interface RegisterScreenProps {
   onRegisterComplete: (email: string, password: string, profile: UserProfile) => Promise<void>;
+  onGoogleAuth: (userType: UserProfile['userType']) => Promise<void>;
   onBack: () => void;
   dm: DarkModeTheme;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegisterComplete,
+  onGoogleAuth,
   onBack,
   dm,
 }) => {
@@ -37,6 +40,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const { width } = useWindowDimensions();
   const compact = width < 380;
   const { scrollRef, keepInputVisible } = useInputVisibility();
@@ -69,7 +73,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       conditions: [], medications: [],
     };
     try { await onRegisterComplete(email.trim().toLowerCase(), password, profile); }
-    catch (error) { showError(error instanceof Error ? error.message : 'Não foi possível criar a conta.'); }
+    catch (error) { showError(friendlyAuthError(error)); }
     finally { setBusy(false); }
   };
 
@@ -264,10 +268,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           onPress={handleRegister}
           disabled={busy}
           activeOpacity={0.8}
-          style={[styles.submitBtn, { backgroundColor: COLORS.primary }]}
+          style={[styles.submitBtn, { backgroundColor: COLORS.primaryDk }]}
         >
           <Text style={styles.submitBtnText}>{busy ? 'Criando conta...' : 'Finalizar Cadastro'}</Text>
           <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          disabled={busy || googleBusy}
+          onPress={async () => {
+            setGoogleBusy(true); setErrorMessage('');
+            try { await onGoogleAuth(userType); }
+            catch (error) { showError(friendlyAuthError(error)); }
+            finally { setGoogleBusy(false); }
+          }}
+          style={[styles.googleButton, { backgroundColor: dm.card, borderColor: dm.border }]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.googleMark}>G</Text>
+          <Text style={[styles.googleText, { color: dm.text }]}>{googleBusy ? 'Conectando...' : 'Cadastrar com Google'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -345,4 +363,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  googleButton: { minHeight: 48, borderRadius: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  googleMark: { color: '#4285F4', fontSize: 18, fontWeight: '900' },
+  googleText: { fontSize: 13, fontWeight: '800' },
 });

@@ -1,236 +1,50 @@
-import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Heart, Activity, ShieldCheck } from 'lucide-react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { COLORS } from '../constants/theme';
+import { useReducedMotion } from '../components/Motion';
+
+const logo = require('../../assets/seda-logo.png');
 
 export const SplashScreen: React.FC = () => {
+  const reduced = useReducedMotion();
+  const pulse = useRef(new Animated.Value(0.98)).current;
+  const dots = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current;
+
+  useEffect(() => {
+    if (reduced) return;
+    const logoLoop = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1.02, duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0.98, duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]));
+    const dotLoops = dots.map((dot, index) => Animated.loop(Animated.sequence([
+      Animated.delay(index * 180),
+      Animated.timing(dot, { toValue: 1, duration: 320, useNativeDriver: true }),
+      Animated.timing(dot, { toValue: 0.3, duration: 420, useNativeDriver: true }),
+      Animated.delay((2 - index) * 180),
+    ])));
+    logoLoop.start();
+    dotLoops.forEach((loop) => loop.start());
+    return () => { logoLoop.stop(); dotLoops.forEach((loop) => loop.stop()); };
+  }, [dots, pulse, reduced]);
+
   return (
-    <View style={styles.touchable}>
-      <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F', '#7CC9BE']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.container}
-      >
-        {/* Background Decorative Rings */}
-        <View style={styles.circleDeco1} />
-        <View style={styles.circleDeco2} />
-        <View style={styles.circleDeco3} />
-
-        {/* Header Badges */}
-        <View style={styles.headerRow}>
-          <View style={styles.susBadge}>
-            <ShieldCheck size={14} color="#FFFFFF" />
-            <Text style={styles.susBadgeText}>Seu diário de saúde</Text>
-          </View>
-          <Text style={styles.versionText}>SEDA</Text>
-        </View>
-
-        {/* Center Brand Identity */}
-        <View style={styles.centerGroup}>
-          <View style={styles.logoRingWrapper}>
-            <View style={styles.pulseRing3} />
-            <View style={styles.pulseRing2} />
-            <View style={styles.pulseRing1} />
-
-            <View style={styles.iconBox}>
-              <View style={styles.heartStack}>
-                <Heart size={44} color="#FFFFFF" fill="rgba(255,255,255,0.85)" />
-                <View style={styles.activityPosition}>
-                  <Activity size={24} color="#59B98A" strokeWidth={2.8} />
-                </View>
-              </View>
-            </View>
-          </View>
-
-          <Text style={styles.brandTitle}>SEDA</Text>
-          <Text style={styles.brandSubtitle}>
-            Seu diário de saúde
-          </Text>
-
-          <View style={styles.quoteCard}>
-            <Text style={styles.quoteText}>
-              "Sua saúde diária monitorada com carinho e precisão."
-            </Text>
-          </View>
-        </View>
-
-        {/* Footer Indicators */}
-        <View style={styles.footerRow}>
-          <ActivityIndicator size="small" color="#FFFFFF" />
-          <Text style={styles.footerHint}>Preparando seu diário de saúde</Text>
-        </View>
-      </LinearGradient>
+    <View style={styles.container}>
+      <Animated.View style={[styles.logo, { transform: [{ scale: pulse }] }]}>
+        <Image source={logo} resizeMode="contain" style={styles.image} accessibilityLabel="SEDA" />
+      </Animated.View>
+      <Text style={styles.caption}>Cuidado que aproxima</Text>
+      <View style={styles.dots} accessibilityLabel="Carregando">
+        {dots.map((opacity, index) => <Animated.View key={index} style={[styles.dot, { opacity }]} />)}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  touchable: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'space-between',
-    padding: 24,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  circleDeco1: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  circleDeco2: {
-    position: 'absolute',
-    top: '35%',
-    left: -70,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  circleDeco3: {
-    position: 'absolute',
-    bottom: -80,
-    right: 20,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-    zIndex: 10,
-  },
-  susBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-  },
-  susBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  versionText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  centerGroup: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  logoRingWrapper: {
-    width: 150,
-    height: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  pulseRing3: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  pulseRing2: {
-    position: 'absolute',
-    width: 118,
-    height: 118,
-    borderRadius: 59,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  pulseRing1: {
-    position: 'absolute',
-    width: 98,
-    height: 98,
-    borderRadius: 49,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  iconBox: {
-    width: 82,
-    height: 82,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heartStack: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityPosition: {
-    position: 'absolute',
-    top: 10,
-  },
-  brandTitle: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -2,
-    marginTop: 18,
-  },
-  brandSubtitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.92)',
-    textAlign: 'center',
-    maxWidth: 240,
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  quoteCard: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    maxWidth: 280,
-  },
-  quoteText: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  footerRow: {
-    alignItems: 'center',
-    gap: 8,
-    paddingBottom: 10,
-    zIndex: 10,
-  },
-  footerHint: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  logo: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
+  image: { width: '100%', height: '100%' },
+  caption: { color: COLORS.primaryDk, fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+  dots: { marginTop: 18, height: 14, flexDirection: 'row', gap: 7, alignItems: 'center' },
+  dot: { width: 6, height: 6, borderRadius: 4, backgroundColor: COLORS.primaryDk },
 });

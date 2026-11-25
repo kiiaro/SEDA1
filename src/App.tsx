@@ -47,6 +47,7 @@ import { ChatScreen } from './screens/ChatScreen';
 import { EditProfileScreen } from './screens/EditProfileScreen';
 import { SupportScreen } from './screens/SupportScreen';
 import { acceptPatientInvite, createPatientInvite, loadProfessionalConnections } from './lib/professional';
+import { friendlyAuthError, startGoogleSignIn } from './lib/googleAuth';
 
 export default function App() {
   // Central application state
@@ -141,6 +142,22 @@ export default function App() {
     await hydrate(data.user);
   };
 
+  const handleGoogleAuth = async (selectedType: UserProfile['userType'] = 'Paciente') => {
+    setAuthNotice('');
+    const authUser = await startGoogleSignIn();
+    if (!authUser) return;
+    const existingData = await loadSedaData(authUser.id);
+    if (!existingData.profile) {
+      const profile: UserProfile = {
+        name: String(authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuário'),
+        cpf: '', phone: '', birthDate: '', susCard: '', userType: selectedType,
+        bloodType: '', emergencyContact: { name: '', phone: '', relation: '' }, conditions: [], medications: [],
+      };
+      await saveProfile(authUser.id, profile);
+    }
+    await hydrate(authUser);
+  };
+
   const handleUpdatePassword = async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
@@ -154,7 +171,7 @@ export default function App() {
       email, password,
       options: { data: { name: profile.name, cpf: profile.cpf, phone: profile.phone, birthDate: profile.birthDate, userType: profile.userType } },
     });
-    if (error) throw error;
+    if (error) throw new Error(friendlyAuthError(error));
     if (data.session?.user) {
       await saveProfile(data.session.user.id, profile);
       await hydrate(data.session.user);
@@ -356,6 +373,7 @@ export default function App() {
           {screen === 'login' && (
             <LoginScreen
               onLogin={handleLogin}
+              onGoogleAuth={() => handleGoogleAuth('Paciente')}
               notice={authNotice}
               onResetPassword={async (email) => {
                 const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
@@ -374,6 +392,7 @@ export default function App() {
           {screen === 'register' && (
             <RegisterScreen
               onRegisterComplete={handleRegister}
+              onGoogleAuth={handleGoogleAuth}
               onBack={() => setScreen('login')}
               dm={dm}
             />

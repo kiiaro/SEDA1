@@ -61,7 +61,7 @@ export const ChatScreen: React.FC<Props> = ({ connection, userId, peerName, dm, 
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: dm.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}>
-      <BackHeader title={peerName} subtitle="Chat ao vivo · mensagens privadas" onBack={onBack} bgGradient={['#143454', '#315F83', '#55A99C']} />
+      <BackHeader title={peerName} subtitle="Chat ao vivo · mensagens privadas" onBack={onBack} bgGradient={['#253E4C', '#355D6E', '#47778D']} />
       <View style={styles.privacy}><ShieldCheck size={15} color={COLORS.success} /><Text style={[styles.privacyText, { color: dm.sub }]}>Conversa acessível apenas às duas contas conectadas.</Text></View>
       <ScrollView ref={scrollRef} style={styles.messageList} contentContainerStyle={styles.messageContent} onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })} keyboardShouldPersistTaps="handled">
         {loading ? <Text style={[styles.emptyText, { color: dm.sub }]}>Carregando mensagens...</Text> : null}

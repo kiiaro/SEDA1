@@ -87,7 +87,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
         title="Painel Analítico"
         subtitle="Resumo baseado nas suas medições salvas"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        bgGradient={['#253E4C', '#355D6E']}
         rightElement={
           <TouchableOpacity
             onPress={handleShare}
@@ -113,7 +113,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
             activeOpacity={0.7}
             style={[
               styles.tabBtn,
-              activeTab === 'pressure' && { backgroundColor: COLORS.primary },
+              activeTab === 'pressure' && { backgroundColor: COLORS.primaryDk },
             ]}
           >
             <Text
@@ -131,7 +131,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
             activeOpacity={0.7}
             style={[
               styles.tabBtn,
-              activeTab === 'glucose' && { backgroundColor: COLORS.primary },
+              activeTab === 'glucose' && { backgroundColor: COLORS.primaryDk },
             ]}
           >
             <Text
@@ -149,7 +149,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
             activeOpacity={0.7}
             style={[
               styles.tabBtn,
-              activeTab === 'frequency' && { backgroundColor: COLORS.primary },
+              activeTab === 'frequency' && { backgroundColor: COLORS.primaryDk },
             ]}
           >
             <Text

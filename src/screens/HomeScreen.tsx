@@ -136,7 +136,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     >
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F', '#7CC9BE']}
+        colors={['#253E4C', '#355D6E', '#47778D']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -380,7 +380,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   { backgroundColor: `${COLORS.secondary}25` },
                 ]}
               >
-                <Users size={22} color="#0F766E" strokeWidth={2.4} />
+                <Users size={22} color="#355D6E" strokeWidth={2.4} />
               </View>
               <Text style={[styles.gridCardTitle, { color: dm.text }]}>Cuidadores</Text>
               <Text style={styles.gridCardSub}>Rede de apoio</Text>

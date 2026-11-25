@@ -22,9 +22,9 @@ export const BackHeader: React.FC<BackHeaderProps> = ({
   rightElement,
 }) => {
   const gradientColors: [string, string, ...string[]] = bgGradient || [
-    '#1E3A5F',
-    '#3D6E9F',
-    '#5E8FC0',
+    '#253E4C',
+    '#355D6E',
+    '#47778D',
   ];
 
   return (

@@ -35,10 +35,10 @@ export const EmergencyScreen: React.FC<Props> = ({ family, onBack, dm }) => {
       </View>
 
       {family.length > 0 && <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
-        <View style={styles.row}><Users size={19} color="#3D6E9F" /><Text style={[styles.section, { color: dm.text }]}>Seus contatos de apoio</Text></View>
+        <View style={styles.row}><Users size={19} color="#355D6E" /><Text style={[styles.section, { color: dm.text }]}>Seus contatos de apoio</Text></View>
         {family.filter((member) => member.phone).map((member) => <TouchableOpacity key={member.id} onPress={() => call(member.phone)} style={[styles.contact, { borderTopColor: dm.border }]}>
           <View><Text style={[styles.contactName, { color: dm.text }]}>{member.name}</Text><Text style={[styles.description, { color: dm.sub }]}>{member.phone}</Text></View>
-          <PhoneCall size={18} color="#3D6E9F" />
+          <PhoneCall size={18} color="#355D6E" />
         </TouchableOpacity>)}
       </View>}
     </View>
