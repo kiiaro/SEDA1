@@ -1,7 +1,7 @@
 {
-  "name": "seda",
+  "name": "theseda",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.6.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

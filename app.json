@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "SEDA",
+    "name": "theSEDA",
     "slug": "seda",
-    "version": "1.6.0",
+    "version": "1.6.3",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -17,11 +17,11 @@
     },
     "android": {
       "package": "com.kiiaro.seda1",
-      "versionCode": 7,
+      "versionCode": 10,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E3A5F"
+        "backgroundColor": "#0BB092"
       }
     },
     "web": {
