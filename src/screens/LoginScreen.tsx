@@ -70,7 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
     >
       {/* Header Gradient */}
       <LinearGradient
-        colors={[COLORS.brand, '#13C5A1']}
+        colors={[COLORS.secondary, '#FFF0AA']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.header, compact && styles.headerCompact]}

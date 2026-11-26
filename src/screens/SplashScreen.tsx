@@ -41,7 +41,7 @@ export const SplashScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.brand, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  container: { flex: 1, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center', gap: 8 },
   logo: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   caption: { color: COLORS.primaryDk, fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },

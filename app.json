@@ -2,7 +2,7 @@
   "expo": {
     "name": "theSEDA",
     "slug": "seda",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "scheme": "seda",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#04B78D"
+      "backgroundColor": "#FFE16D"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,11 +18,11 @@
     },
     "android": {
       "package": "com.kiiaro.seda1",
-      "versionCode": 8,
+      "versionCode": 9,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#04B78D"
+        "backgroundColor": "#0BB092"
       }
     },
     "web": {

@@ -3,7 +3,6 @@ import { DarkModeTheme } from '../types';
 export const COLORS = {
   primary: '#6EABC6',
   primaryDk: '#253E4C',
-  brand: '#04B78D',
   secondary: '#FFE16D',
   accent: '#6EABC6',
   success: '#2FBF71',
