@@ -2,8 +2,9 @@ import React from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PhoneCall, Users } from 'lucide-react-native';
 import { BackHeader } from '../components/BackHeader';
+import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FamilyMember } from '../types';
-import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface Props {
   family: FamilyMember[];
@@ -18,8 +19,9 @@ export const EmergencyScreen: React.FC<Props> = ({ family, onBack, dm }) => {
   };
 
   return <ScrollView style={{ backgroundColor: dm.bg }} contentContainerStyle={styles.page}>
-    <BackHeader title="Emergência" subtitle="Ligue para o SAMU 192" onBack={onBack} bgGradient={['#991B1B', '#E45454']} />
+    <BackHeader title="Emergência" subtitle="Ligue para o SAMU 192" onBack={onBack} dm={dm} accentColor={COLORS.danger} />
     <View style={styles.body}>
+      <FadeInItem delay={0}>
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <Text style={[styles.title, { color: dm.text }]}>Precisa de atendimento urgente?</Text>
         <Text style={[styles.description, { color: dm.sub }]}>O atendimento do SAMU começa por telefone. Ao tocar abaixo, o aplicativo abre a ligação; nenhum chamado é enviado automaticamente.</Text>
@@ -28,19 +30,22 @@ export const EmergencyScreen: React.FC<Props> = ({ family, onBack, dm }) => {
           <Text style={styles.callText}>Ligar 192</Text>
         </TouchableOpacity>
       </View>
+      </FadeInItem>
 
+      <FadeInItem delay={60}>
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <Text style={[styles.section, { color: dm.text }]}>Durante a ligação</Text>
         <Text style={[styles.description, { color: dm.sub }]}>Informe o endereço ou um ponto de referência, explique o que aconteceu e siga as orientações da central.</Text>
       </View>
+      </FadeInItem>
 
-      {family.length > 0 && <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
-        <View style={styles.row}><Users size={19} color="#3D6E9F" /><Text style={[styles.section, { color: dm.text }]}>Seus contatos de apoio</Text></View>
+      {family.length > 0 && <FadeInItem delay={110}><View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
+        <View style={styles.row}><Users size={19} color={COLORS.secondary} /><Text style={[styles.section, { color: dm.text }]}>Seus contatos de apoio</Text></View>
         {family.filter((member) => member.phone).map((member) => <TouchableOpacity key={member.id} onPress={() => call(member.phone)} style={[styles.contact, { borderTopColor: dm.border }]}>
           <View><Text style={[styles.contactName, { color: dm.text }]}>{member.name}</Text><Text style={[styles.description, { color: dm.sub }]}>{member.phone}</Text></View>
-          <PhoneCall size={18} color="#3D6E9F" />
+          <PhoneCall size={18} color={COLORS.primary} />
         </TouchableOpacity>)}
-      </View>}
+      </View></FadeInItem>}
     </View>
   </ScrollView>;
 };

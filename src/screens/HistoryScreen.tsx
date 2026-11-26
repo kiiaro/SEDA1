@@ -2,23 +2,23 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, HeartPulse, Droplets, Activity, Plus } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord, Screen } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface HistoryScreenProps {
   records: HealthRecord[];
   onNavigate: (screen: Screen) => void;
+  onOpenQuickRegister?: () => void;
   dm: DarkModeTheme;
 }
 
-export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigate, dm }) => {
+export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigate, onOpenQuickRegister, dm }) => {
   const [filterPeriod, setFilterPeriod] = useState<'7d' | '15d' | '30d' | '3m'>('7d');
 
   const filterOptions: { id: '7d' | '15d' | '30d' | '3m'; label: string }[] = [
@@ -37,127 +37,143 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ records, onNavigat
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <LinearGradient
-        colors={['#1E3A5F', '#3D6E9F']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerTitle}>Histórico de Saúde</Text>
-            <Text style={styles.headerSub}>Registros diários e aferições</Text>
+      {/* Minimalist Top Header */}
+      <FadeInItem delay={0}>
+        <View style={[styles.header, { borderBottomColor: dm.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)' }]}>
+          <View style={styles.headerTop}>
+            <View>
+              <View style={styles.titleRow}>
+                <View style={styles.accentDot} />
+                <Text style={[styles.headerTitle, { color: dm.text }]}>Histórico de Saúde</Text>
+              </View>
+              <Text style={[styles.headerSub, { color: dm.sub }]}>Registros diários e aferições</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => (onOpenQuickRegister ? onOpenQuickRegister() : onNavigate('pressure'))}
+              activeOpacity={0.85}
+              style={styles.newBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Novo registro"
+            >
+              <Plus size={15} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.newBtnText}>Novo</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => onNavigate('pressure')}
-            activeOpacity={0.8}
-            style={styles.newBtn}
-          >
-            <Plus size={16} color="#FFFFFF" />
-            <Text style={styles.newBtnText}>Novo</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Filter Pills */}
-        <View style={styles.filtersRow}>
-          {filterOptions.map((opt) => {
-            const isSelected = filterPeriod === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                onPress={() => setFilterPeriod(opt.id)}
-                activeOpacity={0.7}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor: isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.18)',
-                  },
-                ]}
-              >
-                <Text
+          {/* Segmented Filter Control */}
+          <View style={[styles.filtersRow, { backgroundColor: dm.card, borderColor: dm.border }]}>
+            {filterOptions.map((opt) => {
+              const isSelected = filterPeriod === opt.id;
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  onPress={() => setFilterPeriod(opt.id)}
+                  activeOpacity={0.7}
                   style={[
-                    styles.filterPillText,
-                    { color: isSelected ? '#1E3A5F' : '#FFFFFF' },
+                    styles.filterPill,
+                    isSelected && { backgroundColor: COLORS.primary },
                   ]}
                 >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      { color: isSelected ? '#FFFFFF' : dm.sub },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </LinearGradient>
+      </FadeInItem>
 
       {/* Records List */}
       <View style={styles.recordsList}>
-        {visibleRecords.length === 0 && <View style={[styles.recordCard, { backgroundColor: dm.card, borderColor: dm.border }]}><Text style={[styles.recordDate, { color: dm.text }]}>Nenhuma medição neste período</Text><Text style={[styles.recordTime, { color: dm.sub }]}>Registre uma medição para acompanhar seu histórico.</Text></View>}
-        {visibleRecords.map((rec) => (
-          <View
-            key={rec.id}
-            style={[
-              styles.recordCard,
-              { backgroundColor: dm.card, borderColor: dm.border },
-            ]}
-          >
-            {/* Card Header */}
-            <View style={styles.recordCardHeader}>
-              <View style={styles.dateWrapper}>
-                <Calendar size={14} color={dm.sub} />
-                <Text style={[styles.recordDate, { color: dm.text }]}>
-                  {rec.date}
-                </Text>
-                <Text style={[styles.recordTime, { color: dm.sub }]}>
-                  • {rec.time}
-                </Text>
-              </View>
-              <StatusBadge status={rec.status} />
+        {visibleRecords.length === 0 && (
+          <FadeInItem delay={60}>
+            <View style={[styles.recordCard, { backgroundColor: dm.card, borderColor: dm.border }]}>
+              <Text style={[styles.recordDate, { color: dm.text }]}>Nenhuma medição neste período</Text>
+              <Text style={[styles.recordTime, { color: dm.sub, marginTop: 4 }]}>
+                Registre uma medição para acompanhar seu histórico.
+              </Text>
             </View>
-
-            {/* 3 Metric Mini Cards */}
-            <View style={styles.metricsRow}>
-              {/* Pressão */}
-              {rec.measurement !== 'glucose' && <View style={[styles.metricBox, styles.pressBox]}>
-                <View style={styles.metricLabelRow}>
-                  <HeartPulse size={12} color="#0369A1" />
-                  <Text style={styles.pressLabel}>Pressão</Text>
+          </FadeInItem>
+        )}
+        {visibleRecords.map((rec, index) => (
+          <FadeInItem key={rec.id} delay={Math.min(index * 45, 240)}>
+            <View
+              style={[
+                styles.recordCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
+              ]}
+            >
+              {/* Card Header */}
+              <View style={styles.recordCardHeader}>
+                <View style={styles.dateWrapper}>
+                  <Calendar size={14} color={dm.sub} />
+                  <Text style={[styles.recordDate, { color: dm.text }]}>
+                    {rec.date}
+                  </Text>
+                  <Text style={[styles.recordTime, { color: dm.sub }]}>
+                    • {rec.time}
+                  </Text>
                 </View>
-                <Text style={styles.pressVal}>
-                  {rec.systolic}/{rec.diastolic}
-                </Text>
-                <Text style={styles.metricUnit}>mmHg</Text>
-              </View>}
-
-              {/* Glicemia */}
-              {rec.measurement !== 'pressure' && <View style={[styles.metricBox, styles.glucBox]}>
-                <View style={styles.metricLabelRow}>
-                  <Droplets size={12} color="#B45309" />
-                  <Text style={styles.glucLabel}>Glicose</Text>
-                </View>
-                <Text style={styles.glucVal}>{rec.glucose}</Text>
-                <Text style={styles.metricUnit}>mg/dL</Text>
-              </View>}
-
-              {/* Pulso */}
-              {rec.measurement !== 'glucose' && rec.hasHeartRate && <View style={[styles.metricBox, styles.pulseBox]}>
-                <View style={styles.metricLabelRow}>
-                  <Activity size={12} color="#047857" />
-                  <Text style={styles.pulseLabel}>Pulso</Text>
-                </View>
-                <Text style={styles.pulseVal}>{rec.heartRate}</Text>
-                <Text style={styles.metricUnit}>bpm</Text>
-              </View>}
-            </View>
-
-            {/* Notes */}
-            {rec.notes ? (
-              <View style={styles.notesBox}>
-                <Text style={[styles.notesText, { color: dm.sub }]}>
-                  "{rec.notes}"
-                </Text>
+                <StatusBadge status={rec.status} />
               </View>
-            ) : null}
-          </View>
+
+              {/* Metric Mini Cards (#00b690 & #264d8c) */}
+              <View style={styles.metricsRow}>
+                {/* Pressão */}
+                {rec.measurement !== 'glucose' && (
+                  <View style={[styles.metricBox, styles.pressBox]}>
+                    <View style={styles.metricLabelRow}>
+                      <HeartPulse size={12} color="#264d8c" />
+                      <Text style={styles.pressLabel}>Pressão</Text>
+                    </View>
+                    <Text style={[styles.metricVal, { color: dm.text }]}>
+                      {rec.systolic}/{rec.diastolic}
+                    </Text>
+                    <Text style={styles.metricUnit}>mmHg</Text>
+                  </View>
+                )}
+
+                {/* Glicemia */}
+                {rec.measurement !== 'pressure' && (
+                  <View style={[styles.metricBox, styles.glucBox]}>
+                    <View style={styles.metricLabelRow}>
+                      <Droplets size={12} color="#00b690" />
+                      <Text style={styles.glucLabel}>Glicose</Text>
+                    </View>
+                    <Text style={[styles.metricVal, { color: dm.text }]}>{rec.glucose}</Text>
+                    <Text style={styles.metricUnit}>mg/dL</Text>
+                  </View>
+                )}
+
+                {/* Pulso */}
+                {rec.measurement !== 'glucose' && rec.hasHeartRate && (
+                  <View style={[styles.metricBox, styles.pulseBox]}>
+                    <View style={styles.metricLabelRow}>
+                      <Activity size={12} color="#00b690" />
+                      <Text style={styles.pulseLabel}>Pulso</Text>
+                    </View>
+                    <Text style={[styles.metricVal, { color: dm.text }]}>{rec.heartRate}</Text>
+                    <Text style={styles.metricUnit}>bpm</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Notes */}
+              {rec.notes ? (
+                <View style={[styles.notesBox, { borderLeftColor: '#00b690' }]}>
+                  <Text style={[styles.notesText, { color: dm.sub }]}>
+                    "{rec.notes}"
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </FadeInItem>
         ))}
       </View>
     </ScrollView>
@@ -169,14 +185,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 28,
+    paddingBottom: 32,
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: 18,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
   },
   headerTop: {
     flexDirection: 'row',
@@ -184,26 +199,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 14,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  accentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '900',
-    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   headerSub: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 2,
+    marginLeft: 16,
   },
   newBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: COLORS.primary,
   },
   newBtnText: {
     color: '#FFFFFF',
@@ -212,26 +236,30 @@ const styles = StyleSheet.create({
   },
   filtersRow: {
     flexDirection: 'row',
-    gap: 8,
+    padding: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 4,
   },
   filterPill: {
-    paddingHorizontal: 14,
+    flex: 1,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
   recordsList: {
-    padding: 16,
+    padding: 18,
     gap: 12,
   },
   recordCard: {
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    elevation: 1,
   },
   recordCardHeader: {
     flexDirection: 'row',
@@ -266,16 +294,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pressBox: {
-    backgroundColor: 'rgba(94, 143, 192, 0.12)',
-    borderColor: 'rgba(94, 143, 192, 0.25)',
+    backgroundColor: 'rgba(38, 77, 140, 0.08)',
+    borderColor: 'rgba(38, 77, 140, 0.22)',
   },
   glucBox: {
-    backgroundColor: 'rgba(244, 183, 64, 0.14)',
-    borderColor: 'rgba(244, 183, 64, 0.3)',
+    backgroundColor: 'rgba(0, 182, 144, 0.08)',
+    borderColor: 'rgba(0, 182, 144, 0.22)',
   },
   pulseBox: {
-    backgroundColor: 'rgba(89, 185, 138, 0.14)',
-    borderColor: 'rgba(89, 185, 138, 0.3)',
+    backgroundColor: 'rgba(0, 182, 144, 0.06)',
+    borderColor: 'rgba(0, 182, 144, 0.18)',
   },
   metricLabelRow: {
     flexDirection: 'row',
@@ -286,32 +314,21 @@ const styles = StyleSheet.create({
   pressLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0369A1',
+    color: '#264d8c',
   },
   glucLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#B45309',
+    color: '#00b690',
   },
   pulseLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#047857',
+    color: '#00b690',
   },
-  pressVal: {
-    fontSize: 14,
+  metricVal: {
+    fontSize: 15,
     fontWeight: '900',
-    color: '#0C4A6E',
-  },
-  glucVal: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#78350F',
-  },
-  pulseVal: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#064E3B',
   },
   metricUnit: {
     fontSize: 9,
@@ -320,9 +337,8 @@ const styles = StyleSheet.create({
   },
   notesBox: {
     marginTop: 10,
-    paddingLeft: 8,
+    paddingLeft: 10,
     borderLeftWidth: 2,
-    borderLeftColor: '#CBD5E1',
   },
   notesText: {
     fontSize: 11,

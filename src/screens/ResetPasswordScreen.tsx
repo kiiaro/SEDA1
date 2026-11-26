@@ -23,7 +23,7 @@ export function ResetPasswordScreen({ onSave, onBack, dm }: { onSave: (password:
     finally { setBusy(false); }
   };
   return <View style={[styles.page, { backgroundColor: dm.bg }]}>
-    <BackHeader title="Nova senha" subtitle="Escolha uma senha para sua conta" onBack={onBack} bgGradient={['#1E3A5F', '#3D6E9F']} />
+    <BackHeader title="Nova senha" subtitle="Escolha uma senha para sua conta" onBack={onBack} dm={dm} />
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.card, { backgroundColor: dm.card, borderColor: dm.border }]}>
         <Text style={[styles.title, { color: dm.text }]}>Redefina sua senha</Text>

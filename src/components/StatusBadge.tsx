@@ -8,26 +8,26 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label }) => {
-  let dotColor = COLORS.success;
+  let dotColor = COLORS.primary;
   let defaultLabel = 'Normal';
-  let badgeBg = 'rgba(47, 191, 113, 0.15)';
-  let textColor = '#15803d';
+  let badgeBg = 'rgba(0, 182, 144, 0.14)';
+  let textColor = '#008C6E';
 
   if (status === 'warn') {
-    dotColor = COLORS.warn;
+    dotColor = COLORS.primaryDk;
     defaultLabel = 'Atenção';
-    badgeBg = 'rgba(244, 183, 64, 0.18)';
-    textColor = '#b45309';
+    badgeBg = 'rgba(38, 77, 140, 0.14)';
+    textColor = '#264d8c';
   } else if (status === 'danger') {
     dotColor = COLORS.danger;
     defaultLabel = 'Alerta';
-    badgeBg = 'rgba(228, 84, 84, 0.18)';
-    textColor = '#b91c1c';
+    badgeBg = 'rgba(239, 68, 68, 0.14)';
+    textColor = '#DC2626';
   } else if (status === 'info') {
-    dotColor = COLORS.primary;
+    dotColor = COLORS.primaryDk;
     defaultLabel = 'Informativo';
-    badgeBg = 'rgba(94, 143, 192, 0.18)';
-    textColor = '#1e3a5f';
+    badgeBg = 'rgba(38, 77, 140, 0.12)';
+    textColor = '#264d8c';
   }
 
   return (
@@ -51,9 +51,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   label: {
     fontSize: 11,

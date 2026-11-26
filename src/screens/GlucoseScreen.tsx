@@ -3,25 +3,27 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Alert,
 } from 'react-native';
-import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
-import { Utensils, Clock, CheckCircle2 } from 'lucide-react-native';
+import { Utensils, Clock, CheckCircle2, Mic } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { HealthRing } from '../components/HealthRing';
+import { HistogramChart } from '../components/HistogramChart';
 import { Stepper } from '../components/Stepper';
 import { useInputVisibility } from '../components/useInputVisibility';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
+import { classifyGlucose } from '../lib/healthUtils';
 
 interface GlucoseScreenProps {
   glucose: number;
   setGlucose: (val: number) => void;
   onSaveRecord: (record: Partial<HealthRecord>) => Promise<void>;
   records: HealthRecord[];
+  onOpenVoice?: () => void;
   onBack: () => void;
   dm: DarkModeTheme;
   fontSizeScale: number;
@@ -32,6 +34,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   setGlucose,
   onSaveRecord,
   records,
+  onOpenVoice,
   onBack,
   dm,
   fontSizeScale,
@@ -45,32 +48,16 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const { scrollRef, keepInputVisible } = useInputVisibility();
 
-  const getGlucoseStatus = (val: number) => {
-    if (val > (mealContext === 'before' ? 130 : 180)) {
-      return {
-        level: 'danger',
-        label: '⬆️ Leitura elevada',
-        color: COLORS.danger,
-        desc: 'As metas variam conforme o momento da refeição e seu plano de cuidado.',
-      };
-    }
-    if (val < 70) {
-      return {
-        level: 'warn',
-        label: '⬇️ Leitura baixa',
-        color: COLORS.primary,
-        desc: 'Uma leitura abaixo de 70 mg/dL precisa de atenção. Siga seu plano de cuidado.',
-      };
-    }
-    return {
-      level: 'normal',
-      label: 'Medição registrada',
-      color: COLORS.accent,
-      desc: 'Compare com a meta definida pela sua equipe de saúde.',
-    };
+  const classified = classifyGlucose(glucose, mealContext);
+  const status = {
+    ...classified,
+    color:
+      classified.level === 'danger'
+        ? COLORS.danger
+        : classified.level === 'warn'
+        ? COLORS.secondary
+        : COLORS.primary,
   };
-
-  const status = getGlucoseStatus(glucose);
 
   const handleSave = async () => {
     if (isSaving || isSaved) return;
@@ -95,27 +82,12 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
     }
   };
 
-  // SVG Chart calculation for 7 days
   const recentRecords = records.filter((r) => r.measurement !== 'pressure').slice(0, 7).reverse();
-  const chartWidth = 300;
-  const chartHeight = 100;
-  const minVal = 60;
-  const maxVal = 200;
-
-  const points = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.glucose - minVal) / (maxVal - minVal);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.glucose, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
-  });
-
-  const pathD = points.length > 0
-    ? `M ${points.map((p) => `${p.x},${p.y}`).join(' L ')}`
-    : '';
-
-  const areaD = points.length > 0
-    ? `${pathD} L ${points[points.length - 1].x},${chartHeight} L ${points[0].x},${chartHeight} Z`
-    : '';
+  const histogramData = recentRecords.map((r) => ({
+    label: r.date.split(',')[0].replace('Ontem', 'Ont.').replace('Anteontem', 'Ant.'),
+    value: r.glucose,
+    displayValue: `${r.glucose} mg/dL`,
+  }));
 
   return (
     <ScrollView
@@ -129,11 +101,25 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
         title="Glicemia Capilar"
         subtitle="Monitoramento de glicose e refeições"
         onBack={onBack}
-        bgGradient={['#2D6A4F', '#59B98A']}
+        dm={dm}
+        accentColor={status.color}
+        rightElement={
+          onOpenVoice ? (
+            <TouchableOpacity
+              onPress={onOpenVoice}
+              accessibilityRole="button"
+              accessibilityLabel="Registro por Voz"
+              style={[styles.voiceHeaderBtn, { backgroundColor: dm.card, borderColor: dm.border }]}
+            >
+              <Mic size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          ) : undefined
+        }
       />
 
       <View style={styles.content}>
         {/* Large Health Ring at Top */}
+        <FadeInItem delay={0}>
         <View
           style={[
             styles.card,
@@ -182,6 +168,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
             {status.desc}
           </Text>
         </View>
+        </FadeInItem>
 
         {/* Meal Context Toggle & Time */}
         <View
@@ -200,16 +187,16 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
               style={[
                 styles.mealBtn,
                 {
-                  backgroundColor: mealContext === 'before' ? `${COLORS.warn}25` : dm.inputBg,
-                  borderColor: mealContext === 'before' ? COLORS.warn : dm.border,
+                  backgroundColor: mealContext === 'before' ? 'rgba(0, 182, 144, 0.12)' : dm.inputBg,
+                  borderColor: mealContext === 'before' ? COLORS.primary : dm.border,
                 },
               ]}
             >
-              <Utensils size={16} color={mealContext === 'before' ? '#B45309' : dm.sub} />
+              <Utensils size={16} color={mealContext === 'before' ? COLORS.primary : dm.sub} />
               <Text
                 style={[
                   styles.mealBtnText,
-                  { color: mealContext === 'before' ? '#B45309' : dm.sub },
+                  { color: mealContext === 'before' ? COLORS.primary : dm.sub },
                 ]}
               >
                 Antes (Jejum)
@@ -222,16 +209,16 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
               style={[
                 styles.mealBtn,
                 {
-                  backgroundColor: mealContext === 'after' ? `${COLORS.warn}25` : dm.inputBg,
-                  borderColor: mealContext === 'after' ? COLORS.warn : dm.border,
+                  backgroundColor: mealContext === 'after' ? 'rgba(0, 182, 144, 0.12)' : dm.inputBg,
+                  borderColor: mealContext === 'after' ? COLORS.primary : dm.border,
                 },
               ]}
             >
-              <Utensils size={16} color={mealContext === 'after' ? '#B45309' : dm.sub} />
+              <Utensils size={16} color={mealContext === 'after' ? COLORS.primary : dm.sub} />
               <Text
                 style={[
                   styles.mealBtnText,
-                  { color: mealContext === 'after' ? '#B45309' : dm.sub },
+                  { color: mealContext === 'after' ? COLORS.primary : dm.sub },
                 ]}
               >
                 Pós-Prandial (2h)
@@ -284,7 +271,7 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
           )}
         </TouchableOpacity>
 
-        {/* 7-Day Chart */}
+        {/* 7-Day Histogram Chart */}
         <View
           style={[
             styles.card,
@@ -298,50 +285,14 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
             <Text style={styles.chartTarget}>Histórico das medições</Text>
           </View>
 
-          <View style={styles.chartArea}>
-            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-              <Defs>
-                <SvgLinearGradient id="glucGradient" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor={COLORS.warn} stopOpacity={0.45} />
-                  <Stop offset="100%" stopColor={COLORS.warn} stopOpacity={0.0} />
-                </SvgLinearGradient>
-              </Defs>
-
-              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
-              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
-
-              {areaD ? <Path d={areaD} fill="url(#glucGradient)" /> : null}
-              {pathD ? (
-                <Path
-                  d={pathD}
-                  fill="none"
-                  stroke={COLORS.warn}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              ) : null}
-
-              {points.map((p, idx) => (
-                <SvgCircle
-                  key={idx}
-                  cx={p.x}
-                  cy={p.y}
-                  r="4"
-                  fill="#FFFFFF"
-                  stroke={COLORS.warn}
-                  strokeWidth="2.5"
-                />
-              ))}
-            </Svg>
-
-            <View style={styles.xAxisRow}>
-              {points.map((p, idx) => (
-                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>
-                  {p.date}
-                </Text>
-              ))}
-            </View>
-          </View>
+          <HistogramChart
+            data={histogramData}
+            minVal={60}
+            maxVal={200}
+            unit="mg/dL"
+            primaryColor={COLORS.primary}
+            dm={dm}
+          />
         </View>
       </View>
     </ScrollView>
@@ -351,6 +302,14 @@ export const GlucoseScreen: React.FC<GlucoseScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  voiceHeaderBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingBottom: 28,
@@ -464,7 +423,7 @@ const styles = StyleSheet.create({
   chartTarget: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#D97706',
+    color: COLORS.primary,
   },
   chartArea: {
     marginTop: 4,

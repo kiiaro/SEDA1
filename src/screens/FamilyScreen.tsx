@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Modal,
@@ -25,6 +24,7 @@ import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FamilyMember } from '../types';
 import { BackHeader } from '../components/BackHeader';
 import { useInputVisibility } from '../components/useInputVisibility';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface FamilyScreenProps {
   family: FamilyMember[];
@@ -64,7 +64,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
       relation: newRelation,
       role: newRole,
       phone: newPhone,
-      avatarBg: newRole === 'Profissional' ? COLORS.primary : COLORS.accent,
+      avatarBg: newRole === 'Profissional' ? COLORS.secondary : COLORS.primary,
       initials: initials || 'CD',
       status: 'online',
       lastSeen: 'Adicionado agora',
@@ -99,7 +99,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
         title="Rede de Cuidado"
         subtitle="Contatos cadastrados por você"
         onBack={onBack}
-        bgGradient={['#0F766E', '#7CC9BE']}
+        dm={dm}
         rightElement={
           <TouchableOpacity
             onPress={() => setShowAddModal(true)}
@@ -114,32 +114,34 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
 
       <View style={styles.content}>
         {/* Info Banner */}
-        <View
-          style={[
-            styles.banner,
-            {
-              backgroundColor: 'rgba(124, 201, 190, 0.15)',
-              borderColor: 'rgba(124, 201, 190, 0.3)',
-            },
-          ]}
-        >
-          <ShieldCheck size={24} color="#0F766E" />
-          <Text style={styles.bannerText}>
-            Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
-            <Text style={{ fontWeight: '800', color: '#0F766E' }}>
-              Familiares e profissionais
-            </Text>{' '}
-            recebem alerta imediato.
-          </Text>
-        </View>
+        <FadeInItem delay={0}>
+          <View
+            style={[
+              styles.banner,
+              {
+                backgroundColor: 'rgba(0, 182, 144, 0.10)',
+                borderColor: 'rgba(0, 182, 144, 0.25)',
+              },
+            ]}
+          >
+            <ShieldCheck size={24} color={COLORS.primary} />
+            <Text style={[styles.bannerText, { color: dm.text }]}>
+              Em caso de emergência ou pico pressórico, todos os contatos com o selo{' '}
+              <Text style={{ fontWeight: '800', color: COLORS.primary }}>
+                Familiares e profissionais
+              </Text>{' '}
+              recebem alerta imediato.
+            </Text>
+          </View>
+        </FadeInItem>
 
         {/* Member Cards */}
         {family.map((member, index) => {
           const dotColor =
             member.status === 'online'
-              ? COLORS.success
+              ? COLORS.primary
               : member.status === 'away'
-              ? COLORS.warn
+              ? COLORS.secondary
               : COLORS.danger;
 
           return (
@@ -220,13 +222,13 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
                     style={[
                       styles.actionIconBtn,
                       {
-                        backgroundColor: 'rgba(47, 191, 113, 0.15)',
-                        borderColor: 'rgba(47, 191, 113, 0.3)',
+                        backgroundColor: 'rgba(0, 182, 144, 0.12)',
+                        borderColor: 'rgba(0, 182, 144, 0.25)',
                       },
                     ]}
                     accessibilityLabel={`WhatsApp com ${member.name}`}
                   >
-                    <MessageCircle size={16} color={COLORS.success} />
+                    <MessageCircle size={16} color={COLORS.primary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -429,15 +431,15 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
-    padding: 16,
+    padding: 18,
   },
   banner: {
     flexDirection: 'row',
@@ -452,7 +454,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     lineHeight: 16,
-    color: '#042F2E',
   },
   memberCard: {
     flexDirection: 'row',

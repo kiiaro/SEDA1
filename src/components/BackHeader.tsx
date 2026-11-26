@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
+import { MotionButton as TouchableOpacity } from './Motion';
 import { COLORS } from '../constants/theme';
+import { DarkModeTheme } from '../types';
 
 interface BackHeaderProps {
   title: string;
@@ -10,65 +11,79 @@ interface BackHeaderProps {
   onBack: () => void;
   bgGradient?: [string, string, ...string[]];
   bgColor?: string;
+  accentColor?: string;
   rightElement?: React.ReactNode;
+  dm?: DarkModeTheme;
 }
 
 export const BackHeader: React.FC<BackHeaderProps> = ({
   title,
   subtitle,
   onBack,
-  bgGradient,
-  bgColor = COLORS.primaryDk,
+  accentColor = COLORS.primary,
   rightElement,
+  dm,
 }) => {
-  const gradientColors: [string, string, ...string[]] = bgGradient || [
-    '#1E3A5F',
-    '#3D6E9F',
-    '#5E8FC0',
-  ];
+  const isDark = dm?.isDark ?? false;
+  const bg = dm?.bg ?? '#F8FAFC';
+  const cardBg = dm?.card ?? '#FFFFFF';
+  const textColor = dm?.text ?? '#0F172A';
+  const subColor = dm?.sub ?? '#64748B';
+  const borderColor = dm?.border ?? '#E2E8F0';
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: bg,
+          borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15, 23, 42, 0.06)',
+        },
+      ]}
     >
       <View style={styles.row}>
         <View style={styles.leftGroup}>
           <TouchableOpacity
             onPress={onBack}
             activeOpacity={0.7}
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              {
+                backgroundColor: cardBg,
+                borderColor,
+              },
+            ]}
             accessibilityLabel="Voltar"
           >
-            <ArrowLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+            <ArrowLeft size={19} color={textColor} strokeWidth={2.4} />
           </TouchableOpacity>
           <View style={styles.titleWrapper}>
-            <Text style={styles.title} numberOfLines={1}>
-              {title}
-            </Text>
-            {subtitle && (
-              <Text style={styles.subtitle} numberOfLines={1}>
+            <View style={styles.titleRow}>
+              <View style={[styles.accentDot, { backgroundColor: accentColor }]} />
+              <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>
+                {title}
+              </Text>
+            </View>
+            {subtitle ? (
+              <Text style={[styles.subtitle, { color: subColor }]} numberOfLines={1}>
                 {subtitle}
               </Text>
-            )}
+            ) : null}
           </View>
         </View>
 
-        {rightElement && <View style={styles.rightGroup}>{rightElement}</View>}
+        {rightElement ? <View style={styles.rightGroup}>{rightElement}</View> : null}
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
   },
   row: {
     flexDirection: 'row',
@@ -85,26 +100,34 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   titleWrapper: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  accentDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
   title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
+    fontSize: 19,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 2,
+    marginLeft: 14,
   },
   rightGroup: {
     marginLeft: 8,

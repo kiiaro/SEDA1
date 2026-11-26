@@ -16,11 +16,13 @@ import {
   COLORS,
   getDarkModeTheme,
 } from './constants/theme';
-import { supabase } from './lib/supabase';
+import { DEMO_USER_ID, getDemoSeedData, supabase } from './lib/supabase';
 import { deleteItem, insertItem, loadSedaData, saveProfile, updateItem } from './lib/data';
 import { MobileShell } from './components/MobileShell';
 import { NavBar } from './components/NavBar';
+import { QuickRegisterModal } from './components/QuickRegisterModal';
 import { ScreenEntrance } from './components/Motion';
+import { GlobalCSS } from './components/GlobalCSS';
 
 // Screens
 import { SplashScreen } from './screens/SplashScreen';
@@ -46,6 +48,7 @@ import { ConnectionsScreen } from './screens/ConnectionsScreen';
 import { ChatScreen } from './screens/ChatScreen';
 import { EditProfileScreen } from './screens/EditProfileScreen';
 import { SupportScreen } from './screens/SupportScreen';
+import { FamilyDashboardScreen } from './screens/FamilyDashboardScreen';
 import { acceptPatientInvite, createPatientInvite, loadProfessionalConnections } from './lib/professional';
 
 export default function App() {
@@ -57,6 +60,7 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -124,6 +128,47 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('autostart') === '1') {
+        const rawRole = params.get('role');
+        const role: UserProfile['userType'] =
+          rawRole === 'Profissional' || rawRole === 'Familiar' || rawRole === 'Paciente'
+            ? rawRole
+            : 'Paciente';
+        const isEmpty = params.get('empty') === '1';
+        const seed = getDemoSeedData(role);
+        const profile = isEmpty ? { ...seed.profile, medications: [] } : seed.profile;
+        const seededRecords = isEmpty ? [] : seed.records;
+        const seededAppointments = isEmpty ? [] : seed.appointments;
+        const seededConnections = isEmpty ? [] : seed.connections;
+        setUser(profile);
+        setConnections(seededConnections);
+        setRecords(seededRecords);
+        setAppointments(seededAppointments);
+        setFamily(seed.family);
+        setAlerts(seed.alerts);
+        const lastPressure = seededRecords.find((r) => r.measurement !== 'glucose');
+        const lastGlucose = seededRecords.find((r) => r.measurement !== 'pressure');
+        const lastPulse = seededRecords.find((r) => r.hasHeartRate);
+        if (lastPressure) { setPressSys(lastPressure.systolic); setPressDia(lastPressure.diastolic); }
+        if (lastPulse && lastPulse.heartRate !== undefined) setHeartRate(lastPulse.heartRate);
+        if (lastGlucose) setGlucose(lastGlucose.glucose);
+        setSessionUserId(DEMO_USER_ID);
+        const requestedScreen = params.get('screen') as Screen | null;
+        const validScreens: Screen[] = [
+          'home', 'pressure', 'glucose', 'voice', 'history', 'dashboard', 'alerts',
+          'family', 'connections', 'profile', 'edit_profile', 'settings', 'emergency',
+          'appointments', 'new_appointment', 'support', 'onboarding', 'splash',
+        ];
+        const targetScreen = requestedScreen && validScreens.includes(requestedScreen) ? requestedScreen : 'home';
+        if (['home', 'history', 'alerts', 'family', 'profile', 'dashboard', 'appointments', 'connections'].includes(targetScreen)) {
+          setActiveTab(targetScreen);
+        }
+        setScreen(targetScreen);
+        return () => { active = false; };
+      }
+    }
     supabase.auth.getUser().then(async ({ data, error }) => {
       if (!active) return;
       if (error || !data.user) { setScreen('login'); return; }
@@ -149,18 +194,52 @@ export default function App() {
     setScreen('login');
   };
 
+  const handleLoginGoogle = async (preferredRole?: UserProfile['userType']) => {
+    setAuthNotice('');
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+          data: preferredRole ? { userType: preferredRole } : undefined,
+        } as any,
+      });
+      if (error) throw error;
+      if (data?.session?.user) {
+        await hydrate(data.session.user);
+      } else {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) await hydrate(userData.user);
+      }
+    } catch (err) {
+      Alert.alert('Erro ao entrar com Google', err instanceof Error ? err.message : 'Tente novamente.');
+    }
+  };
+
   const handleRegister = async (email: string, password: string, profile: UserProfile) => {
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { name: profile.name, cpf: profile.cpf, phone: profile.phone, birthDate: profile.birthDate, userType: profile.userType } },
-    });
-    if (error) throw error;
-    if (data.session?.user) {
-      await saveProfile(data.session.user.id, profile);
-      await hydrate(data.session.user);
-    } else {
-      setAuthNotice('Confira seu e-mail e abra o link de confirmação para concluir o cadastro.');
-      setScreen('login');
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { name: profile.name, cpf: profile.cpf, phone: profile.phone, birthDate: profile.birthDate, userType: profile.userType } },
+      });
+      if (error) {
+        if (error.message?.toLowerCase().includes('rate') || error.message?.toLowerCase().includes('limit')) {
+          throw new Error('Limite de envio de e-mails do servidor atingido (Rate limit). Use o botão "Continuar com o Google" para cadastro instantâneo!');
+        }
+        throw error;
+      }
+      if (data.session?.user) {
+        await saveProfile(data.session.user.id, profile);
+        await hydrate(data.session.user);
+      } else {
+        setAuthNotice('Conta criada! Caso demore o envio do e-mail por limite da API, acesse diretamente com sua senha ou com o Google.');
+        setScreen('login');
+      }
+    } catch (err: any) {
+      if (err.message?.toLowerCase().includes('rate') || err.message?.toLowerCase().includes('limit')) {
+        throw new Error('Limite de envio de e-mails atingido (Rate limit). Use "Continuar com o Google" para cadastrar e entrar imediatamente!');
+      }
+      throw err;
     }
   };
 
@@ -176,6 +255,7 @@ export default function App() {
 
   const handleRefresh = async () => {
     if (!sessionUserId) return;
+    if (sessionUserId === DEMO_USER_ID) return;
     setRefreshing(true);
     try {
       const data = await loadSedaData(sessionUserId);
@@ -235,7 +315,10 @@ export default function App() {
       ),
     };
 
-    await insertItem('seda_health_records', sessionUserId, created);
+    const isDemo = sessionUserId === DEMO_USER_ID;
+    if (!isDemo) {
+      await insertItem('seda_health_records', sessionUserId, created);
+    }
     setRecords((prev) => [created, ...prev]);
 
     // Check thresholds for auto-alert
@@ -253,7 +336,9 @@ export default function App() {
         actionScreen: 'pressure',
       };
       try {
-        await insertItem('seda_alerts', sessionUserId, alertItem);
+        if (!isDemo) {
+          await insertItem('seda_alerts', sessionUserId, alertItem);
+        }
         setAlerts((prev) => [alertItem, ...prev]);
       } catch (error) { Alert.alert('Registro salvo', 'O alerta não pôde ser sincronizado.'); }
     }
@@ -262,15 +347,19 @@ export default function App() {
   // Appointments handler
   const handleAddAppointment = async (newAppt: Appointment) => {
     if (!sessionUserId) throw new Error('Entre na sua conta para salvar.');
-    await insertItem('seda_appointments', sessionUserId, newAppt);
+    if (sessionUserId !== DEMO_USER_ID) {
+      await insertItem('seda_appointments', sessionUserId, newAppt);
+    }
     setAppointments((prev) => [newAppt, ...prev]);
   };
 
   const handleCancelAppointment = async (id: number) => {
     const appt = appointments.find((item) => item.id === id);
     if (!sessionUserId || !appt) return;
-    try { await updateItem('seda_appointments', sessionUserId, { ...appt, status: 'cancelled' as const }); }
-    catch (error) { Alert.alert('Não foi possível cancelar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
+    if (sessionUserId !== DEMO_USER_ID) {
+      try { await updateItem('seda_appointments', sessionUserId, { ...appt, status: 'cancelled' as const }); }
+      catch (error) { Alert.alert('Não foi possível cancelar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
+    }
     setAppointments((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: 'cancelled' } : a))
     );
@@ -278,32 +367,56 @@ export default function App() {
 
   const handleDismissAlert = async (id: string) => {
     if (!sessionUserId) return;
-    try { await deleteItem('seda_alerts', sessionUserId, id); }
-    catch (error) { Alert.alert('Não foi possível dispensar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
+    if (sessionUserId !== DEMO_USER_ID) {
+      try { await deleteItem('seda_alerts', sessionUserId, id); }
+      catch (error) { Alert.alert('Não foi possível dispensar', error instanceof Error ? error.message : 'Tente novamente.'); return; }
+    }
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleAddFamilyMember = async (newMember: FamilyMember) => {
     if (!sessionUserId) throw new Error('Entre na sua conta para salvar.');
-    await insertItem('seda_family_members', sessionUserId, newMember);
+    if (sessionUserId !== DEMO_USER_ID) {
+      await insertItem('seda_family_members', sessionUserId, newMember);
+    }
     setFamily((prev) => [...prev, newMember]);
   };
 
-  const handleCreatePatientInvite = async () => createPatientInvite();
+  const handleCreatePatientInvite = async () => {
+    if (sessionUserId === DEMO_USER_ID) {
+      return `SEDA-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    return createPatientInvite();
+  };
 
   const handleAcceptPatientInvite = async (code: string) => {
+    if (sessionUserId === DEMO_USER_ID) {
+      const connection: ProfessionalConnection = {
+        id: `conn_${Date.now()}`,
+        professionalId: 'prof_demo',
+        patientId: DEMO_USER_ID,
+        professionalName: `Dr. Roberto Guimarães (${code.trim().toUpperCase()})`,
+        patientName: user.name,
+        createdAt: new Date().toISOString(),
+      };
+      setConnections((current) => [connection, ...current]);
+      return;
+    }
     const connection = await acceptPatientInvite(code);
     setConnections((current) => current.some((item) => item.id === connection.id) ? current : [connection, ...current]);
   };
 
   const handleRefreshConnections = useCallback(async () => {
+    if (sessionUserId === DEMO_USER_ID) return;
     const refreshed = await loadProfessionalConnections();
     setConnections(refreshed);
-  }, []);
+  }, [sessionUserId]);
 
   const handleRemoveConnection = async (connection: ProfessionalConnection) => {
-    const { error } = await supabase.from('seda_patient_connections').delete().eq('id', connection.id);
-    if (error) throw new Error(error.message);
+    if (sessionUserId !== DEMO_USER_ID) {
+      const { error } = await supabase.from('seda_patient_connections').delete().eq('id', connection.id);
+      if (error) throw new Error(error.message);
+    }
     setConnections((current) => current.filter((item) => item.id !== connection.id));
   };
 
@@ -313,10 +426,29 @@ export default function App() {
     setScreen('chat');
   };
 
+  const handleUpdateUserInline = async (profile: UserProfile) => {
+    if (sessionUserId && sessionUserId !== DEMO_USER_ID) {
+      await saveProfile(sessionUserId, profile);
+    }
+    setUser(profile);
+  };
+
   const handleSaveProfile = async (profile: UserProfile) => {
     if (!sessionUserId) throw new Error('Entre na sua conta para atualizar o perfil.');
-    await saveProfile(sessionUserId, profile);
+    if (sessionUserId !== DEMO_USER_ID) {
+      await saveProfile(sessionUserId, profile);
+    }
     setUser(profile);
+    if (profile.userType === 'Paciente' || profile.userType === 'Profissional') {
+      if (sessionUserId !== DEMO_USER_ID) {
+        try {
+          const refreshed = await loadProfessionalConnections();
+          setConnections(refreshed);
+        } catch {
+          // Keep current connections if offline
+        }
+      }
+    }
     setScreen('profile');
   };
 
@@ -339,6 +471,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <GlobalCSS />
       <MobileShell
         dm={dm}
         isSimulatorMode={isSimulatorMode}
@@ -356,6 +489,7 @@ export default function App() {
           {screen === 'login' && (
             <LoginScreen
               onLogin={handleLogin}
+              onLoginGoogle={handleLoginGoogle}
               notice={authNotice}
               onResetPassword={async (email) => {
                 const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
@@ -374,6 +508,7 @@ export default function App() {
           {screen === 'register' && (
             <RegisterScreen
               onRegisterComplete={handleRegister}
+              onLoginGoogle={handleLoginGoogle}
               onBack={() => setScreen('login')}
               dm={dm}
             />
@@ -384,6 +519,8 @@ export default function App() {
               user={user}
               connections={connections}
               appointments={appointments}
+              onCreateInvite={handleCreatePatientInvite}
+              onOpenChat={handleOpenChat}
               onNavigate={(target) => {
                 if (['home', 'connections', 'appointments', 'profile'].includes(target)) setActiveTab(target);
                 setScreen(target);
@@ -392,7 +529,24 @@ export default function App() {
             />
           )}
 
-          {screen === 'home' && user.userType !== 'Profissional' && (
+          {screen === 'home' && user.userType === 'Familiar' && (
+            <FamilyDashboardScreen
+              user={user}
+              appointments={appointments}
+              records={records}
+              unreadAlertsCount={alerts.length}
+              onUpdateUser={handleUpdateUserInline}
+              onNavigate={(s) => {
+                if (['home', 'history', 'alerts', 'family', 'profile'].includes(s)) {
+                  setActiveTab(s);
+                }
+                setScreen(s);
+              }}
+              dm={dm}
+            />
+          )}
+
+          {screen === 'home' && user.userType === 'Paciente' && (
             <HomeScreen
               user={user}
               pressSys={pressSys}
@@ -401,6 +555,7 @@ export default function App() {
               glucose={glucose}
               appointments={appointments}
               records={records}
+              connections={connections}
               onNavigate={(s) => {
                 if (['home', 'history', 'alerts', 'family', 'profile', 'connections'].includes(s)) {
                   setActiveTab(s);
@@ -424,6 +579,7 @@ export default function App() {
               setHeartRate={setHeartRate}
               onSaveRecord={handleSaveHealthRecord}
               records={records}
+              onOpenVoice={() => setScreen('voice')}
               onBack={() => setScreen('home')}
               dm={dm}
               fontSizeScale={fontScaleRatio}
@@ -436,6 +592,7 @@ export default function App() {
               setGlucose={setGlucose}
               onSaveRecord={handleSaveHealthRecord}
               records={records}
+              onOpenVoice={() => setScreen('voice')}
               onBack={() => setScreen('home')}
               dm={dm}
               fontSizeScale={fontScaleRatio}
@@ -455,6 +612,7 @@ export default function App() {
             <HistoryScreen
               records={records}
               onNavigate={(s) => setScreen(s)}
+              onOpenQuickRegister={() => setQuickRegisterOpen(true)}
               dm={dm}
             />
           )}
@@ -521,6 +679,13 @@ export default function App() {
                 if (s === 'support') setSupportReturnTo('profile');
                 setScreen(s);
               }}
+              onUpdateAvatar={async (avatarUrl) => {
+                const updated = { ...user, avatarUrl };
+                if (sessionUserId && sessionUserId !== DEMO_USER_ID) {
+                  await saveProfile(sessionUserId, updated);
+                }
+                setUser(updated);
+              }}
               onLogout={handleLogout}
               dm={dm}
             />
@@ -568,6 +733,7 @@ export default function App() {
             <NewAppointmentScreen
               onSaveAppointment={handleAddAppointment}
               userName={user.name}
+              userType={user.userType}
               onNavigate={(s) => setScreen(s)}
               onBack={() => setScreen('appointments')}
               dm={dm}
@@ -580,11 +746,21 @@ export default function App() {
           <NavBar
             activeTab={activeTab}
             onTabChange={handleNavTabChange}
+            onQuickAction={() => setQuickRegisterOpen(true)}
             dm={dm}
             unreadAlertsCount={alerts.length}
             userType={user.userType}
           />
         )}
+
+        <QuickRegisterModal
+          visible={quickRegisterOpen}
+          onClose={() => setQuickRegisterOpen(false)}
+          onSelect={(targetScreen) => setScreen(targetScreen)}
+          dm={dm}
+          userType={user.userType}
+          monitoredPatientName={user.monitoredPatient?.name}
+        />
       </MobileShell>
     </SafeAreaProvider>
   );

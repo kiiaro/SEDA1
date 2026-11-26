@@ -106,6 +106,21 @@ export interface AlertItem {
   actionScreen?: Screen;
 }
 
+export interface ProfessionalInfo {
+  councilRegister: string;
+  specialty: string;
+  clinicName: string;
+}
+
+export interface MonitoredPatientInfo {
+  name: string;
+  relation: string;
+  phone: string;
+  birthDate?: string;
+  conditions: string[];
+  notes?: string;
+}
+
 export interface UserProfile {
   name: string;
   cpf: string;
@@ -114,6 +129,11 @@ export interface UserProfile {
   susCard: string;
   userType: 'Paciente' | 'Familiar' | 'Profissional';
   bloodType: string;
+  avatarUrl?: string;
+  professionalInfo?: ProfessionalInfo;
+  monitoredPatient?: MonitoredPatientInfo;
+  caregiverNotes?: string[];
+  medicationsTakenToday?: Record<string, boolean>;
   emergencyContact: {
     name: string;
     phone: string;
@@ -127,3 +147,4 @@ export interface UserProfile {
     nextTime: string;
   }[];
 }
+

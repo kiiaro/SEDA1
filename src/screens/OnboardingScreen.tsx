@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Path, Rect, Line } from 'react-native-svg';
 import { ArrowRight } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme } from '../types';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface OnboardingScreenProps {
   onFinish: () => void;
@@ -40,15 +41,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       id: 1,
       title: 'Glicose em Equilíbrio',
       sub: 'Registre suas taxas de glicemia antes e após as refeições de forma simples e sem complicações numéricas.',
-      color: COLORS.accent,
+      color: COLORS.primary,
       badge: 'Glicemia & Dieta',
       renderIcon: () => (
         <Svg width={160} height={160} viewBox="0 0 200 200">
-          <Circle cx="100" cy="100" r="85" fill="#59B98A" fillOpacity={0.12} />
-          <Circle cx="100" cy="100" r="65" fill="#59B98A" fillOpacity={0.2} />
+          <Circle cx="100" cy="100" r="85" fill="#00b690" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#00b690" fillOpacity={0.2} />
           <Path
             d="M100 50 C100 50 65 95 65 125 C65 145 80 160 100 160 C120 160 135 145 135 125 C135 95 100 50 100 50 Z"
-            fill="#59B98A"
+            fill="#00b690"
           />
           <Circle cx="88" cy="120" r="6" fill="#FFFFFF" fillOpacity={0.6} />
         </Svg>
@@ -58,13 +59,13 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       id: 2,
       title: 'Voz, Família e SUS',
       sub: 'Fale seus números por voz, compartilhe com seus filhos ou cuidadores e acesse consultas do SUS com 1 toque.',
-      color: COLORS.primary,
+      color: COLORS.secondary,
       badge: 'Cuidado Integrado',
       renderIcon: () => (
         <Svg width={160} height={160} viewBox="0 0 200 200">
-          <Circle cx="100" cy="100" r="85" fill="#5E8FC0" fillOpacity={0.12} />
-          <Circle cx="100" cy="100" r="65" fill="#5E8FC0" fillOpacity={0.2} />
-          <Circle cx="100" cy="100" r="48" fill="#5E8FC0" />
+          <Circle cx="100" cy="100" r="85" fill="#264d8c" fillOpacity={0.12} />
+          <Circle cx="100" cy="100" r="65" fill="#264d8c" fillOpacity={0.2} />
+          <Circle cx="100" cy="100" r="48" fill="#264d8c" />
           <Rect x="91" y="75" width="18" height="32" rx="9" fill="#FFFFFF" />
           <Path
             d="M80 95 C80 110 120 110 120 95"
@@ -104,14 +105,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish, dm
       </View>
 
       {/* Main Slide Body */}
-      <View style={styles.bodyGroup}>
-        <View style={[styles.iconCard, { backgroundColor: `${slide.color}14` }]}>
+      <FadeInItem key={currentSlide} delay={0} style={styles.bodyGroup}>
+        <View style={[styles.iconCard, { backgroundColor: `${slide.color}12` }]}>
           {slide.renderIcon()}
         </View>
 
         <Text style={[styles.slideTitle, { color: dm.text }]}>{slide.title}</Text>
         <Text style={[styles.slideSub, { color: dm.sub }]}>{slide.sub}</Text>
-      </View>
+      </FadeInItem>
 
       {/* Footer Controls */}
       <View style={styles.footer}>

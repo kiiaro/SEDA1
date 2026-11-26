@@ -2,16 +2,12 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Alert,
   Share,
 } from 'react-native';
-import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
 import {
-  TrendingDown,
-  TrendingUp,
   CheckCircle2,
   AlertTriangle,
   Share2,
@@ -19,6 +15,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { HistogramChart } from '../components/HistogramChart';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface DashboardScreenProps {
   records: HealthRecord[];
@@ -39,37 +37,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
     const date = day.toLocaleDateString('sv-SE');
     return { label: day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''), date, count: records.filter((r) => r.recordedAt && new Date(r.recordedAt).toLocaleDateString('sv-SE') === date).length };
   });
-  const chartWidth = 300;
-  const chartHeight = 110;
+  const pressureHistogramData = recentRecords.map((r) => ({
+    label: r.date.split(',')[0].replace('Ontem', 'Ont.').replace('Anteontem', 'Ant.'),
+    value: r.systolic,
+    secondaryValue: r.diastolic,
+    displayValue: `${r.systolic}/${r.diastolic} mmHg`,
+  }));
 
-  // Pressure SVG points
-  const sysPoints = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.systolic - 50) / (160 - 50);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.systolic, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
-  });
+  const glucoseHistogramData = recentGlucoseRecords.map((r) => ({
+    label: r.date.split(',')[0].replace('Ontem', 'Ont.').replace('Anteontem', 'Ant.'),
+    value: r.glucose,
+    displayValue: `${r.glucose} mg/dL`,
+  }));
 
-  const diaPoints = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.diastolic - 50) / (160 - 50);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.diastolic };
-  });
-
-  const sysPathD = sysPoints.length > 0 ? `M ${sysPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
-  const diaPathD = diaPoints.length > 0 ? `M ${diaPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
-
-  // Glucose SVG points
-  const glucPoints = recentGlucoseRecords.map((r, i) => {
-    const x = (i / Math.max(recentGlucoseRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.glucose - 60) / (180 - 60);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.glucose, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
-  });
-
-  const glucPathD = glucPoints.length > 0 ? `M ${glucPoints.map((p) => `${p.x},${p.y}`).join(' L ')}` : '';
-  const glucAreaD = glucPoints.length > 0 ? `${glucPathD} L ${glucPoints[glucPoints.length - 1].x},${chartHeight} L ${glucPoints[0].x},${chartHeight} Z` : '';
+  const frequencyHistogramData = dailyCounts.map((day) => ({
+    label: day.label,
+    value: day.count,
+    displayValue: `${day.count} ${day.count === 1 ? 'medição' : 'medições'}`,
+  }));
 
   const handleShare = async () => {
     try {
@@ -87,15 +72,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
         title="Painel Analítico"
         subtitle="Resumo baseado nas suas medições salvas"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        dm={dm}
         rightElement={
           <TouchableOpacity
             onPress={handleShare}
             activeOpacity={0.7}
-            style={styles.shareBtn}
+            style={[styles.shareBtn, { backgroundColor: dm.card, borderColor: dm.border }]}
             accessibilityLabel="Compartilhar relatório"
           >
-            <Share2 size={16} color="#FFFFFF" />
+            <Share2 size={16} color={COLORS.primary} />
           </TouchableOpacity>
         }
       />
@@ -164,31 +149,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
         </View>
 
         {/* 3 KPI Cards */}
-        <View style={styles.kpiRow}>
-          {/* KPI 1 */}
-          <View style={[styles.kpiCard, styles.kpiCard1]}>
-            <Text style={styles.kpiLabel1}>Média Sist.</Text>
-            <Text style={styles.kpiVal1}>{average(pressureRecords.map((r) => r.systolic))}</Text>
-            <Text style={styles.kpiUnit}>mmHg</Text>
-            <Text style={styles.kpiTrendText}>{pressureRecords.length} registros</Text>
-          </View>
+        <FadeInItem delay={60}>
+          <View style={styles.kpiRow}>
+            {/* KPI 1 */}
+            <View style={[styles.kpiCard, styles.kpiCard1]}>
+              <Text style={styles.kpiLabel1}>Média Sist.</Text>
+              <Text style={[styles.kpiVal, { color: dm.text }]}>{average(pressureRecords.map((r) => r.systolic))}</Text>
+              <Text style={styles.kpiUnit}>mmHg</Text>
+              <Text style={styles.kpiTrendText}>{pressureRecords.length} registros</Text>
+            </View>
 
-          {/* KPI 2 */}
-          <View style={[styles.kpiCard, styles.kpiCard2]}>
-            <Text style={styles.kpiLabel2}>Glicose Média</Text>
-            <Text style={styles.kpiVal2}>{average(glucoseRecords.map((r) => r.glucose))}</Text>
-            <Text style={styles.kpiUnit}>mg/dL</Text>
-            <Text style={styles.kpiTrendText}>{glucoseRecords.length} registros</Text>
-          </View>
+            {/* KPI 2 */}
+            <View style={[styles.kpiCard, styles.kpiCard2]}>
+              <Text style={styles.kpiLabel2}>Glicose Média</Text>
+              <Text style={[styles.kpiVal, { color: dm.text }]}>{average(glucoseRecords.map((r) => r.glucose))}</Text>
+              <Text style={styles.kpiUnit}>mg/dL</Text>
+              <Text style={styles.kpiTrendText}>{glucoseRecords.length} registros</Text>
+            </View>
 
-          {/* KPI 3 */}
-          <View style={[styles.kpiCard, styles.kpiCard3]}>
-            <Text style={styles.kpiLabel3}>Pulso Médio</Text>
-            <Text style={styles.kpiVal3}>{average(records.filter((r) => r.hasHeartRate).map((r) => r.heartRate))}</Text>
-            <Text style={styles.kpiUnit}>bpm</Text>
-            <Text style={[styles.kpiTrendText, { color: '#4F46E5' }]}>{records.filter((r) => r.hasHeartRate).length} registros</Text>
+            {/* KPI 3 */}
+            <View style={[styles.kpiCard, styles.kpiCard3]}>
+              <Text style={styles.kpiLabel3}>Pulso Médio</Text>
+              <Text style={[styles.kpiVal, { color: dm.text }]}>{average(records.filter((r) => r.hasHeartRate).map((r) => r.heartRate))}</Text>
+              <Text style={styles.kpiUnit}>bpm</Text>
+              <Text style={[styles.kpiTrendText, { color: COLORS.secondary }]}>{records.filter((r) => r.hasHeartRate).length} registros</Text>
+            </View>
           </View>
-        </View>
+        </FadeInItem>
 
         {/* Tab 1: Pressão */}
         {activeTab === 'pressure' && (
@@ -202,32 +189,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
               <Text style={[styles.chartTitle, { color: dm.sub }]}>
                 Sistólica vs Diastólica
               </Text>
-              <View style={styles.chartLegend}>
-                <Text style={styles.legendSys}>● Sistólica</Text>
-                <Text style={styles.legendDia}>● Diastólica</Text>
-              </View>
+              <Text style={styles.targetLabel}>Histórico recente</Text>
             </View>
 
-            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
-              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
-
-              {sysPathD ? <Path d={sysPathD} fill="none" stroke={COLORS.primary} strokeWidth="3" /> : null}
-              {diaPathD ? <Path d={diaPathD} fill="none" stroke={COLORS.secondary} strokeWidth="3" /> : null}
-
-              {sysPoints.map((p, idx) => (
-                <SvgCircle key={`s-${idx}`} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.primary} strokeWidth="2" />
-              ))}
-              {diaPoints.map((p, idx) => (
-                <SvgCircle key={`d-${idx}`} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.secondary} strokeWidth="2" />
-              ))}
-            </Svg>
-
-            <View style={styles.xAxisRow}>
-              {sysPoints.map((p, idx) => (
-                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>{p.date}</Text>
-              ))}
-            </View>
+            <HistogramChart
+              data={pressureHistogramData}
+              minVal={50}
+              maxVal={170}
+              unit="mmHg"
+              primaryColor={COLORS.secondary}
+              secondaryColor={COLORS.primary}
+              primaryLabel="Sistólica"
+              secondaryLabel="Diastólica"
+              dm={dm}
+            />
           </View>
         )}
 
@@ -246,29 +221,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
               <Text style={styles.targetLabel}>Medições salvas</Text>
             </View>
 
-            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-              <Defs>
-                <SvgLinearGradient id="dashGlucGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="5%" stopColor={COLORS.warn} stopOpacity={0.4} />
-                  <Stop offset="95%" stopColor={COLORS.warn} stopOpacity={0.0} />
-                </SvgLinearGradient>
-              </Defs>
-              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
-              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
-
-              {glucAreaD ? <Path d={glucAreaD} fill="url(#dashGlucGrad)" /> : null}
-              {glucPathD ? <Path d={glucPathD} fill="none" stroke={COLORS.warn} strokeWidth="3" /> : null}
-
-              {glucPoints.map((p, idx) => (
-                <SvgCircle key={idx} cx={p.x} cy={p.y} r="4" fill="#FFFFFF" stroke={COLORS.warn} strokeWidth="2" />
-              ))}
-            </Svg>
-
-            <View style={styles.xAxisRow}>
-              {glucPoints.map((p, idx) => (
-                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>{p.date}</Text>
-              ))}
-            </View>
+            <HistogramChart
+              data={glucoseHistogramData}
+              minVal={60}
+              maxVal={190}
+              unit="mg/dL"
+              primaryColor={COLORS.primary}
+              dm={dm}
+            />
           </View>
         )}
 
@@ -284,36 +244,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
               <Text style={[styles.chartTitle, { color: dm.sub }]}>
                 Aferições Diárias
               </Text>
-              <Text style={[styles.targetLabel, { color: '#4F46E5' }]}>Últimos 7 dias</Text>
+              <Text style={[styles.targetLabel, { color: COLORS.secondary }]}>Últimos 7 dias</Text>
             </View>
 
-            <View style={styles.barChartContainer}>
-              {dailyCounts.map((day, i) => {
-                const heightVal = Math.min(100, day.count * 24);
-                const isToday = i === 6;
-                return (
-                  <View key={day.date} style={styles.barColumn}>
-                    <View
-                      style={[
-                        styles.barItem,
-                        {
-                          height: heightVal,
-                          backgroundColor: isToday ? COLORS.primary : `${COLORS.primary}45`,
-                        },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.barLabel,
-                        { color: isToday ? COLORS.primary : dm.sub },
-                      ]}
-                    >
-                      {day.label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+            <HistogramChart
+              data={frequencyHistogramData}
+              minVal={0}
+              maxVal={Math.max(4, ...dailyCounts.map((d) => d.count))}
+              unit="medições"
+              primaryColor={COLORS.secondary}
+              dm={dm}
+            />
           </View>
         )}
 
@@ -341,9 +282,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
             >
               <View style={styles.summaryLeft}>
                 {item.count > 0 ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
+                  <CheckCircle2 size={16} color={COLORS.primary} />
                 ) : (
-                  <AlertTriangle size={16} color="#D97706" />
+                  <AlertTriangle size={16} color={COLORS.secondary} />
                 )}
                 <Text style={[styles.summaryDay, { color: dm.text }]}>
                   {item.label} • {item.date}
@@ -368,15 +309,15 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   shareBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   body: {
-    padding: 16,
+    padding: 18,
     gap: 14,
   },
   tabsWrapper: {
@@ -411,48 +352,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   kpiCard1: {
-    backgroundColor: 'rgba(94, 143, 192, 0.12)',
-    borderColor: 'rgba(94, 143, 192, 0.25)',
+    backgroundColor: 'rgba(38, 77, 140, 0.08)',
+    borderColor: 'rgba(38, 77, 140, 0.22)',
   },
   kpiCard2: {
-    backgroundColor: 'rgba(244, 183, 64, 0.12)',
-    borderColor: 'rgba(244, 183, 64, 0.25)',
+    backgroundColor: 'rgba(0, 182, 144, 0.08)',
+    borderColor: 'rgba(0, 182, 144, 0.22)',
   },
   kpiCard3: {
-    backgroundColor: 'rgba(107, 127, 212, 0.12)',
-    borderColor: 'rgba(107, 127, 212, 0.25)',
+    backgroundColor: 'rgba(38, 77, 140, 0.06)',
+    borderColor: 'rgba(38, 77, 140, 0.18)',
   },
   kpiLabel1: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0369A1',
+    color: COLORS.secondary,
   },
   kpiLabel2: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#B45309',
+    color: COLORS.primary,
   },
   kpiLabel3: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#4338CA',
+    color: COLORS.secondary,
   },
-  kpiVal1: {
-    fontSize: 16,
+  kpiVal: {
+    fontSize: 17,
     fontWeight: '900',
-    color: '#0C4A6E',
-    marginTop: 2,
-  },
-  kpiVal2: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#78350F',
-    marginTop: 2,
-  },
-  kpiVal3: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#312E81',
     marginTop: 2,
   },
   kpiUnit: {
@@ -468,13 +396,12 @@ const styles = StyleSheet.create({
   kpiTrendText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#16A34A',
+    color: COLORS.primary,
   },
   card: {
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    elevation: 1,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -505,7 +432,7 @@ const styles = StyleSheet.create({
   targetLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#D97706',
+    color: COLORS.primary,
   },
   xAxisRow: {
     flexDirection: 'row',

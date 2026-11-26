@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Modal,
@@ -27,6 +26,8 @@ import {
 import { COLORS } from '../constants/theme';
 import { Appointment, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { getAppointmentProximity } from '../lib/healthUtils';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface AppointmentsScreenProps {
   appointments: Appointment[];
@@ -57,7 +58,8 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
   );
 
   const currentList = activeTab === 'upcoming' ? upcomingList : pastList;
-  const nextAppt = upcomingList.sort((a, b) => a.date.localeCompare(b.date))[0];
+  const nextAppt = [...upcomingList].sort((a, b) => a.date.localeCompare(b.date))[0];
+  const apptProximity = getAppointmentProximity(nextAppt);
 
   const handleConfirmCancel = () => {
     if (cancelModalAppt) {
@@ -70,30 +72,30 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
     switch (status) {
       case 'confirmed':
         return (
-          <View style={[styles.statusBadge, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
-            <CheckCircle2 size={12} color="#16A34A" />
-            <Text style={[styles.statusText, { color: '#16A34A' }]}>Confirmado</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(0, 182, 144, 0.14)' }]}>
+            <CheckCircle2 size={12} color={COLORS.primary} />
+            <Text style={[styles.statusText, { color: COLORS.primary }]}>Confirmado</Text>
           </View>
         );
       case 'pending':
         return (
-          <View style={[styles.statusBadge, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-            <Hourglass size={12} color="#D97706" />
-            <Text style={[styles.statusText, { color: '#D97706' }]}>Pendente UBS</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(38, 77, 140, 0.12)' }]}>
+            <Hourglass size={12} color={COLORS.secondary} />
+            <Text style={[styles.statusText, { color: COLORS.secondary }]}>Pendente UBS</Text>
           </View>
         );
       case 'completed':
         return (
-          <View style={[styles.statusBadge, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
-            <CheckCircle2 size={12} color="#0284C7" />
-            <Text style={[styles.statusText, { color: '#0284C7' }]}>Realizada</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(38, 77, 140, 0.12)' }]}>
+            <CheckCircle2 size={12} color={COLORS.secondary} />
+            <Text style={[styles.statusText, { color: COLORS.secondary }]}>Realizada</Text>
           </View>
         );
       case 'cancelled':
         return (
-          <View style={[styles.statusBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-            <XCircle size={12} color="#DC2626" />
-            <Text style={[styles.statusText, { color: '#DC2626' }]}>Cancelada</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(239, 68, 68, 0.14)' }]}>
+            <XCircle size={12} color="#EF4444" />
+            <Text style={[styles.statusText, { color: '#EF4444' }]}>Cancelada</Text>
           </View>
         );
     }
@@ -109,7 +111,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
           title="Minhas Consultas"
           subtitle="Agendamentos presenciais e teleconsultas"
           onBack={onBack}
-          bgGradient={['#1E3A5F', '#3D6E9F']}
+          dm={dm}
           rightElement={
             <TouchableOpacity
               onPress={() => onNavigate('new_appointment')}
@@ -125,27 +127,33 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
         <View style={styles.body}>
           {/* Highlight Next Appointment */}
           {nextAppt && (
-            <LinearGradient
-              colors={['#3D6E9F', '#5E8FC0']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.highlightCard}
-            >
-              <View style={styles.highlightHeader}>
-                <View style={styles.highlightTag}>
-                  <Text style={styles.highlightTagText}>Próximo Atendimento</Text>
+            <FadeInItem delay={0}>
+              <LinearGradient
+                colors={['#264d8c', '#1A3A6E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.highlightCard}
+              >
+                <View style={styles.highlightHeader}>
+                  <View style={styles.highlightTag}>
+                    <Text style={styles.highlightTagText}>
+                      {apptProximity.isSoon && apptProximity.message
+                        ? apptProximity.message
+                        : 'Últimas Consultas'}
+                    </Text>
+                  </View>
+                  <Text style={styles.highlightDateTime}>
+                    {nextAppt.date} • {nextAppt.time}
+                  </Text>
                 </View>
-                <Text style={styles.highlightDateTime}>
-                  {nextAppt.date} • {nextAppt.time}
-                </Text>
-              </View>
 
-              <Text style={styles.highlightDoctor}>{nextAppt.doctor}</Text>
-              <Text style={styles.highlightSpecialty}>{nextAppt.specialty}</Text>
-              <Text style={styles.highlightLocation} numberOfLines={1}>
-                📍 {nextAppt.location || 'Local não informado'}
-              </Text>
-            </LinearGradient>
+                <Text style={styles.highlightDoctor}>{nextAppt.doctor}</Text>
+                <Text style={styles.highlightSpecialty}>{nextAppt.specialty}</Text>
+                <Text style={styles.highlightLocation} numberOfLines={1}>
+                  📍 {nextAppt.location || 'Local não informado'}
+                </Text>
+              </LinearGradient>
+            </FadeInItem>
           )}
 
           {/* 2 Tabs */}
@@ -169,7 +177,7 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
                   { color: activeTab === 'upcoming' ? '#FFFFFF' : dm.sub },
                 ]}
               >
-                Próximas ({upcomingList.length})
+                Últimas Consultas ({upcomingList.length})
               </Text>
             </TouchableOpacity>
 
@@ -223,13 +231,13 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
                           {
                             backgroundColor:
                               appt.type === 'teleconsulta'
-                                ? 'rgba(107, 127, 212, 0.15)'
+                                ? 'rgba(38, 77, 140, 0.12)'
                                 : `${COLORS.primary}18`,
                           },
                         ]}
                       >
                         {appt.type === 'teleconsulta' ? (
-                          <Video size={18} color="#6B7FD4" />
+                          <Video size={18} color={COLORS.secondary} />
                         ) : (
                           <Stethoscope size={18} color={COLORS.primary} />
                         )}
@@ -284,8 +292,8 @@ export const AppointmentsScreen: React.FC<AppointmentsScreenProps> = ({
 
                   {appt.notes && (
                     <View style={styles.notesBox}>
-                      <Text style={styles.notesText}>
-                        📌 <Text style={{ fontWeight: '800' }}>Orientação:</Text> {appt.notes}
+                      <Text style={[styles.notesText, { color: dm.text }]}>
+                        <Text style={{ fontWeight: '800', color: COLORS.secondary }}>Orientação:</Text> {appt.notes}
                       </Text>
                     </View>
                   )}
@@ -391,21 +399,20 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   body: {
-    padding: 16,
+    padding: 18,
     gap: 14,
   },
   highlightCard: {
-    borderRadius: 20,
-    padding: 16,
-    elevation: 3,
+    borderRadius: 22,
+    padding: 18,
   },
   highlightHeader: {
     flexDirection: 'row',
@@ -414,9 +421,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   highlightTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   highlightTagText: {
@@ -545,13 +552,13 @@ const styles = StyleSheet.create({
   notesBox: {
     padding: 10,
     borderRadius: 12,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: 'rgba(38, 77, 140, 0.08)',
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: 'rgba(38, 77, 140, 0.2)',
   },
   notesText: {
     fontSize: 11,
-    color: '#92400E',
+    lineHeight: 16,
   },
   actionRow: {
     flexDirection: 'row',
@@ -567,7 +574,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#3D6E9F',
+    backgroundColor: COLORS.secondary,
   },
   virtualBtnText: {
     color: '#FFFFFF',

@@ -3,18 +3,19 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Alert,
 } from 'react-native';
-import Svg, { Path, Circle as SvgCircle, Line as SvgLine } from 'react-native-svg';
-import { Heart, Activity, CheckCircle2, AlertTriangle, FileText } from 'lucide-react-native';
+import { Heart, CheckCircle2, AlertTriangle, FileText, Mic } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, HealthRecord } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { HistogramChart } from '../components/HistogramChart';
 import { Stepper } from '../components/Stepper';
 import { useInputVisibility } from '../components/useInputVisibility';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
+import { classifyPressure } from '../lib/healthUtils';
 
 interface PressureScreenProps {
   pressSys: number;
@@ -25,6 +26,7 @@ interface PressureScreenProps {
   setHeartRate: (val: number) => void;
   onSaveRecord: (record: Partial<HealthRecord>) => Promise<void>;
   records: HealthRecord[];
+  onOpenVoice?: () => void;
   onBack: () => void;
   dm: DarkModeTheme;
   fontSizeScale: number;
@@ -39,6 +41,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
   setHeartRate,
   onSaveRecord,
   records,
+  onOpenVoice,
   onBack,
   dm,
   fontSizeScale,
@@ -48,42 +51,18 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const { scrollRef, keepInputVisible } = useInputVisibility();
 
-  const getStatusInfo = (sys: number, dia: number) => {
-    if (sys >= 140 || dia >= 90) {
-      return {
-        level: 'danger',
-        color: COLORS.danger,
-        title: 'Leitura de pressão elevada',
-        desc: 'Uma medição isolada não define diagnóstico. Confirme a leitura e converse com sua equipe de saúde.',
-        icon: AlertTriangle,
-      };
-    }
-    if (sys >= 130 || dia >= 85) {
-      return {
-        level: 'warn',
-        color: COLORS.warn,
-        title: 'Leitura que merece atenção',
-        desc: 'Acompanhe as próximas medições e converse com sua equipe de saúde.',
-        icon: AlertTriangle,
-      };
-    }
-    return {
-      level: 'normal',
-      color: COLORS.success,
-      title: 'Medição registrada',
-      desc: 'As metas individuais devem ser definidas com sua equipe de saúde.',
-      icon: Heart,
-    };
+  const classified = classifyPressure(pressSys, pressDia);
+  const statusColor =
+    classified.level === 'danger'
+      ? COLORS.danger
+      : classified.level === 'warn'
+      ? COLORS.secondary
+      : COLORS.primary;
+  const status = {
+    ...classified,
+    color: statusColor,
+    icon: classified.level === 'normal' ? Heart : AlertTriangle,
   };
-
-  const status = getStatusInfo(pressSys, pressDia);
-
-  const headerGradient: [string, string, ...string[]] =
-    pressSys >= 140
-      ? ['#B91C1C', '#E45454']
-      : pressSys >= 130
-      ? ['#D97706', '#F4B740']
-      : ['#1E3A5F', '#3D6E9F'];
 
   const handleSave = async () => {
     if (isSaving || isSaved) return;
@@ -105,34 +84,13 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
     }
   };
 
-  // SVG Chart calculation for 7 days
   const recentRecords = records.filter((r) => r.measurement !== 'glucose').slice(0, 7).reverse();
-  const chartWidth = 300;
-  const chartHeight = 110;
-  const minVal = 50;
-  const maxVal = 170;
-
-  const sysPoints = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.systolic - minVal) / (maxVal - minVal);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.systolic, date: r.date.split(',')[0].replace('Hoje', 'Hoje').replace('Ontem', 'Ont.') };
-  });
-
-  const diaPoints = recentRecords.map((r, i) => {
-    const x = (i / Math.max(recentRecords.length - 1, 1)) * (chartWidth - 24) + 12;
-    const norm = (r.diastolic - minVal) / (maxVal - minVal);
-    const y = chartHeight - norm * (chartHeight - 20) - 10;
-    return { x, y, val: r.diastolic };
-  });
-
-  const sysPathD = sysPoints.length > 0
-    ? `M ${sysPoints.map((p) => `${p.x},${p.y}`).join(' L ')}`
-    : '';
-
-  const diaPathD = diaPoints.length > 0
-    ? `M ${diaPoints.map((p) => `${p.x},${p.y}`).join(' L ')}`
-    : '';
+  const histogramData = recentRecords.map((r) => ({
+    label: r.date.split(',')[0].replace('Ontem', 'Ont.').replace('Anteontem', 'Ant.'),
+    value: r.systolic,
+    secondaryValue: r.diastolic,
+    displayValue: `${r.systolic}/${r.diastolic} mmHg`,
+  }));
 
   const StatusIcon = status.icon;
 
@@ -148,32 +106,47 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
         title="Pressão Arterial"
         subtitle="Registro e curva diária de aferição"
         onBack={onBack}
-        bgGradient={headerGradient}
+        dm={dm}
+        accentColor={status.color}
+        rightElement={
+          onOpenVoice ? (
+            <TouchableOpacity
+              onPress={onOpenVoice}
+              accessibilityRole="button"
+              accessibilityLabel="Registro por Voz"
+              style={[styles.voiceHeaderBtn, { backgroundColor: dm.card, borderColor: dm.border }]}
+            >
+              <Mic size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          ) : undefined
+        }
       />
 
       <View style={styles.content}>
         {/* Status Banner */}
-        <View
-          style={[
-            styles.banner,
-            {
-              backgroundColor: `${status.color}15`,
-              borderColor: `${status.color}40`,
-            },
-          ]}
-        >
-          <View style={[styles.bannerIconBox, { backgroundColor: status.color }]}>
-            <StatusIcon size={24} color="#FFFFFF" strokeWidth={2.5} />
+        <FadeInItem delay={0}>
+          <View
+            style={[
+              styles.banner,
+              {
+                backgroundColor: `${status.color}12`,
+                borderColor: `${status.color}35`,
+              },
+            ]}
+          >
+            <View style={[styles.bannerIconBox, { backgroundColor: status.color }]}>
+              <StatusIcon size={22} color="#FFFFFF" strokeWidth={2.5} />
+            </View>
+            <View style={styles.bannerTextWrapper}>
+              <Text style={[styles.bannerTitle, { color: status.color }]}>
+                {status.title}
+              </Text>
+              <Text style={[styles.bannerDesc, { color: dm.sub }]}>
+                {status.desc}
+              </Text>
+            </View>
           </View>
-          <View style={styles.bannerTextWrapper}>
-            <Text style={[styles.bannerTitle, { color: status.color }]}>
-              {status.title}
-            </Text>
-            <Text style={[styles.bannerDesc, { color: dm.sub }]}>
-              {status.desc}
-            </Text>
-          </View>
-        </View>
+        </FadeInItem>
 
         {/* 3 Steppers Card */}
         <View
@@ -216,7 +189,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
               min={40}
               max={200}
               unit="bpm"
-              color={COLORS.purple}
+              color={COLORS.primary}
               fontSizeScale={fontSizeScale}
             />
           </View>
@@ -267,7 +240,7 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
           )}
         </TouchableOpacity>
 
-        {/* 7-Day Chart */}
+        {/* 7-Day Histogram Chart */}
         <View
           style={[
             styles.card,
@@ -278,85 +251,19 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
             <Text style={[styles.chartTitle, { color: dm.sub }]}>
               Histórico Comparativo (7 Dias)
             </Text>
-            <View style={styles.chartLegend}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: COLORS.primary }]}
-                />
-                <Text style={[styles.legendText, { color: dm.sub }]}>Sistólica</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: COLORS.secondary }]}
-                />
-                <Text style={[styles.legendText, { color: dm.sub }]}>Diastólica</Text>
-              </View>
-            </View>
           </View>
 
-          <View style={styles.chartArea}>
-            <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-              {/* Grid guide lines */}
-              <SvgLine x1="0" y1="20" x2={chartWidth} y2="20" stroke={dm.border} strokeDasharray="3,3" />
-              <SvgLine x1="0" y1="60" x2={chartWidth} y2="60" stroke={dm.border} strokeDasharray="3,3" />
-              <SvgLine x1="0" y1="100" x2={chartWidth} y2="100" stroke={dm.border} strokeDasharray="3,3" />
-
-              {/* Systolic Line */}
-              {sysPathD ? (
-                <Path
-                  d={sysPathD}
-                  fill="none"
-                  stroke={COLORS.primary}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              ) : null}
-
-              {/* Diastolic Line */}
-              {diaPathD ? (
-                <Path
-                  d={diaPathD}
-                  fill="none"
-                  stroke={COLORS.secondary}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              ) : null}
-
-              {sysPoints.map((p, idx) => (
-                <SvgCircle
-                  key={`s-${idx}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r="4"
-                  fill="#FFFFFF"
-                  stroke={COLORS.primary}
-                  strokeWidth="2"
-                />
-              ))}
-
-              {diaPoints.map((p, idx) => (
-                <SvgCircle
-                  key={`d-${idx}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r="4"
-                  fill="#FFFFFF"
-                  stroke={COLORS.secondary}
-                  strokeWidth="2"
-                />
-              ))}
-            </Svg>
-
-            {/* X-axis labels */}
-            <View style={styles.xAxisRow}>
-              {sysPoints.map((p, idx) => (
-                <Text key={idx} style={[styles.xAxisText, { color: dm.sub }]}>
-                  {p.date}
-                </Text>
-              ))}
-            </View>
-          </View>
+          <HistogramChart
+            data={histogramData}
+            minVal={50}
+            maxVal={170}
+            unit="mmHg"
+            primaryColor={COLORS.secondary}
+            secondaryColor={COLORS.primary}
+            primaryLabel="Sistólica"
+            secondaryLabel="Diastólica"
+            dm={dm}
+          />
         </View>
       </View>
     </ScrollView>
@@ -366,6 +273,14 @@ export const PressureScreen: React.FC<PressureScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  voiceHeaderBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingBottom: 28,

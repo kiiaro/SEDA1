@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   Switch,
   StyleSheet,
   ScrollView,
@@ -21,6 +20,7 @@ import {
 import { COLORS } from '../constants/theme';
 import { DarkModeTheme, FontSizeScale } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface SettingsScreenProps {
   darkMode: boolean;
@@ -69,10 +69,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         title="Configurações & Acessibilidade"
         subtitle="Ajustes visuais, tamanho de fonte e alertas"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        dm={dm}
       />
 
       <View style={styles.content}>
+        <FadeInItem delay={0}>
         {/* Dark Mode */}
         <View
           style={[
@@ -111,6 +112,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             thumbColor="#FFFFFF"
           />
         </View>
+        </FadeInItem>
 
         {/* Font Scaling */}
         <View
@@ -287,6 +289,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </View>
             <ChevronRight size={16} color={dm.sub} />
           </TouchableOpacity>
+        </View>
+
+        <View style={{ alignItems: 'center', paddingTop: 6, gap: 2 }}>
+          <Text style={{ fontSize: 12, fontWeight: '800', color: dm.text }}>
+            SEDA · Sistema de Equilíbrio de Diabetes e Artérias
+          </Text>
+          <Text style={{ fontSize: 11, color: dm.sub }}>
+            Seu diário de saúde preventiva
+          </Text>
         </View>
       </View>
     </ScrollView>

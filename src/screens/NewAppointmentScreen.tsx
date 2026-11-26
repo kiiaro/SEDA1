@@ -16,14 +16,15 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import { COLORS, SPECIALTIES } from '../constants/theme';
-import { Appointment, DarkModeTheme, Screen } from '../types';
+import { Appointment, DarkModeTheme, Screen, UserProfile } from '../types';
 import { BackHeader } from '../components/BackHeader';
-import { MotionButton as TouchableOpacity } from '../components/Motion';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 import { useInputVisibility } from '../components/useInputVisibility';
 
 interface NewAppointmentScreenProps {
   onSaveAppointment: (appt: Appointment) => Promise<void>;
   userName: string;
+  userType?: UserProfile['userType'];
   onNavigate: (screen: Screen) => void;
   onBack: () => void;
   dm: DarkModeTheme;
@@ -32,11 +33,14 @@ interface NewAppointmentScreenProps {
 export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
   onSaveAppointment,
   userName,
+  userType = 'Paciente',
   onNavigate,
   onBack,
   dm,
 }) => {
-  const [bookedBy, setBookedBy] = useState<'Paciente' | 'Familiar'>('Paciente');
+  const [bookedBy, setBookedBy] = useState<'Paciente' | 'Familiar' | 'Profissional'>(
+    userType === 'Profissional' ? 'Profissional' : userType === 'Familiar' ? 'Familiar' : 'Paciente'
+  );
   const [type, setType] = useState<'presencial' | 'teleconsulta'>('presencial');
   const [doctor, setDoctor] = useState('');
   const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
@@ -86,7 +90,12 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
       status: 'pending',
       location: type === 'presencial' ? selectedLocation.trim() : 'Teleconsulta',
       meetingUrl: type === 'teleconsulta' ? meetingUrl.trim() : undefined,
-      bookedBy: bookedBy === 'Paciente' ? userName : 'Familiar / Cuidador',
+      bookedBy:
+        bookedBy === 'Paciente'
+          ? userName
+          : bookedBy === 'Profissional'
+            ? `Dr(a). ${userName}`
+            : 'Familiar / Cuidador',
       notes: notes.trim(),
     };
 
@@ -108,7 +117,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
         title="Registrar Consulta"
         subtitle="Guarde aqui os dados de uma consulta já marcada"
         onBack={onBack}
-        bgGradient={['#1E3A5F', '#3D6E9F']}
+        dm={dm}
       />
 
       <View style={styles.form}>
@@ -121,6 +130,7 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
         ) : null}
 
         {/* 1. Quem agenda */}
+        <FadeInItem delay={0}>
         <View
           style={[
             styles.card,
@@ -170,8 +180,29 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
                 Familiar / Cuidador
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setBookedBy('Profissional')}
+              activeOpacity={0.7}
+              style={[
+                styles.toggleBtn,
+                bookedBy === 'Profissional'
+                  ? { backgroundColor: 'rgba(38, 77, 140, 0.14)', borderColor: COLORS.secondary }
+                  : { backgroundColor: dm.inputBg, borderColor: dm.border },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.toggleBtnText,
+                  { color: bookedBy === 'Profissional' ? COLORS.secondary : dm.sub },
+                ]}
+              >
+                Profissional
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
+        </FadeInItem>
 
         {/* 2. Formato */}
         <View
@@ -211,15 +242,15 @@ export const NewAppointmentScreen: React.FC<NewAppointmentScreenProps> = ({
               style={[
                 styles.toggleBtn,
                 type === 'teleconsulta'
-                  ? { backgroundColor: 'rgba(107, 127, 212, 0.18)', borderColor: '#6B7FD4' }
+                  ? { backgroundColor: 'rgba(38, 77, 140, 0.14)', borderColor: COLORS.secondary }
                   : { backgroundColor: dm.inputBg, borderColor: dm.border },
               ]}
             >
-              <Video size={16} color={type === 'teleconsulta' ? '#6B7FD4' : dm.sub} />
+              <Video size={16} color={type === 'teleconsulta' ? COLORS.secondary : dm.sub} />
               <Text
                 style={[
                   styles.toggleBtnText,
-                  { color: type === 'teleconsulta' ? '#6B7FD4' : dm.sub },
+                  { color: type === 'teleconsulta' ? COLORS.secondary : dm.sub },
                 ]}
               >
                 Teleconsulta

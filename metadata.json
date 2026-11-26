@@ -1,6 +1,6 @@
 {
   "name": "SEDA",
-  "description": "Aplicativo mobile completo de saúde preventiva para hipertensão e diabetes (45+), integrado ao SUS com recursos de acessibilidade, rede de cuidado e emergência.",
+  "description": "SEDA — Sistema de Equilíbrio de Diabetes e Artérias. Seu diário de saúde preventiva para hipertensão e diabetes (45+), integrado ao SUS.",
   "requestFramePermissions": ["microphone", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -35,7 +35,7 @@ const answerFor = (question: string) => {
 };
 
 export const SupportScreen: React.FC<Props> = ({ onBack, dm }) => {
-  const [messages, setMessages] = useState<Message[]>([{ id: 'welcome', from: 'bot', text: 'Olá! Sou o assistente do SEDA. Toque em uma dúvida frequente ou escreva sua pergunta. Posso ajudar com o uso do aplicativo.' }]);
+  const [messages, setMessages] = useState<Message[]>([{ id: 'welcome', from: 'bot', text: 'Olá! Sou o assistente do SEDA — Sistema de Equilíbrio de Diabetes e Artérias, seu diário de saúde preventiva. Toque em uma dúvida frequente ou escreva sua pergunta.' }]);
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 
@@ -46,7 +46,7 @@ export const SupportScreen: React.FC<Props> = ({ onBack, dm }) => {
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: dm.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <BackHeader title="Ajuda e suporte" subtitle="Respostas rápidas sobre o SEDA" onBack={onBack} bgGradient={['#143454', '#315F83', '#55A99C']} />
+      <BackHeader title="Ajuda e suporte" subtitle="SEDA · Sistema de Equilíbrio de Diabetes e Artérias" onBack={onBack} dm={dm} />
       <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
         {messages.map((message) => (
           <View key={message.id} style={[styles.row, message.from === 'user' ? styles.userRow : styles.botRow]}>

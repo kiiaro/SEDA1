@@ -2,13 +2,14 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
 import { ArrowRight, Check } from 'lucide-react-native';
+import { COLORS } from '../constants/theme';
 import { AlertItem, DarkModeTheme, Screen } from '../types';
 import { BackHeader } from '../components/BackHeader';
+import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 
 interface AlertsScreenProps {
   alerts: AlertItem[];
@@ -35,40 +36,43 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         title="Central de Alertas"
         subtitle="Notificações críticas, remédios e consultas"
         onBack={onBack}
-        bgGradient={['#991B1B', '#DC2626', '#E45454']}
+        dm={dm}
+        accentColor={COLORS.primary}
       />
 
       <View style={styles.content}>
         {alerts.length === 0 ? (
-          <View
-            style={[
-              styles.emptyCard,
-              { backgroundColor: dm.card, borderColor: dm.border },
-            ]}
-          >
-            <View style={styles.emptyIconBox}>
-              <Check size={32} color="#16A34A" />
-            </View>
-            <Text style={[styles.emptyTitle, { color: dm.text }]}>
-              Nenhum alerta pendente
-            </Text>
-            <Text style={[styles.emptyDesc, { color: dm.sub }]}>
-              Você ainda não tem alertas pendentes.
-            </Text>
-          </View>
-        ) : (
-          alerts.map((alt) => (
+          <FadeInItem delay={0}>
             <View
-              key={alt.id}
               style={[
-                styles.alertCard,
-                {
-                  backgroundColor: dm.card,
-                  borderColor: dm.border,
-                  borderLeftColor: alt.color,
-                },
+                styles.emptyCard,
+                { backgroundColor: dm.card, borderColor: dm.border },
               ]}
             >
+              <View style={styles.emptyIconBox}>
+                <Check size={32} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: dm.text }]}>
+                Nenhum alerta pendente
+              </Text>
+              <Text style={[styles.emptyDesc, { color: dm.sub }]}>
+                Você ainda não tem alertas pendentes.
+              </Text>
+            </View>
+          </FadeInItem>
+        ) : (
+          alerts.map((alt, idx) => (
+            <FadeInItem key={alt.id} delay={Math.min(idx * 45, 220)}>
+              <View
+                style={[
+                  styles.alertCard,
+                  {
+                    backgroundColor: dm.card,
+                    borderColor: dm.border,
+                    borderLeftColor: alt.color,
+                  },
+                ]}
+              >
               <View style={styles.alertTop}>
                 <View style={styles.alertMainInfo}>
                   <View
@@ -135,6 +139,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 )}
               </View>
             </View>
+            </FadeInItem>
           ))
         )}
       </View>
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: 'rgba(0, 182, 144, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
