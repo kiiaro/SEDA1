@@ -6,7 +6,6 @@ import {
   Text,
   TextInput,
   View,
-  Image,
   Modal,
 } from 'react-native';
 import {
@@ -21,7 +20,7 @@ import {
   X,
   Copy,
 } from 'lucide-react-native';
-import QRCodeGenerator from 'qrcode';
+import QRCode from 'react-native-qrcode-svg';
 import { BackHeader } from '../components/BackHeader';
 import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 import { COLORS } from '../constants/theme';
@@ -55,7 +54,7 @@ export const ConnectionsScreen: React.FC<Props> = ({
 }) => {
   const [inviteCode, setInviteCode] = useState('');
   const [newCode, setNewCode] = useState('');
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [qrCodeValue, setQrCodeValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [showScannerModal, setShowScannerModal] = useState(false);
   const isProfessional = user.userType === 'Profissional';
@@ -88,12 +87,7 @@ export const ConnectionsScreen: React.FC<Props> = ({
     try {
       const code = await onCreateInvite();
       setNewCode(code);
-      const qr = await QRCodeGenerator.toDataURL(code, {
-        width: 200,
-        margin: 2,
-        color: { dark: '#264d8c', light: '#FFFFFF' },
-      });
-      setQrCodeDataUrl(qr);
+      setQrCodeValue(code);
     } catch (error) {
       Alert.alert('Erro ao criar convite', error instanceof Error ? error.message : 'Tente novamente.');
     } finally {
@@ -163,9 +157,9 @@ export const ConnectionsScreen: React.FC<Props> = ({
               Gere um QR Code ou código para o paciente escanear no consultório.
             </Text>
 
-            {qrCodeDataUrl ? (
+            {qrCodeValue ? (
               <View style={styles.qrDisplayBox}>
-                <Image source={{ uri: qrCodeDataUrl }} style={styles.qrImage} />
+                <QRCode value={qrCodeValue} size={200} color="#264d8c" backgroundColor="#FFFFFF" />
                 <View style={styles.codeBadge}>
                   <Text style={styles.codeBadgeText}>{newCode}</Text>
                 </View>
@@ -182,7 +176,7 @@ export const ConnectionsScreen: React.FC<Props> = ({
             >
               <QrCode size={18} color="#FFF" />
               <Text style={styles.primaryButtonText}>
-                {busy ? 'Gerando...' : qrCodeDataUrl ? 'Gerar Outro QR Code' : 'Gerar QR Code de Conexão'}
+                {busy ? 'Gerando...' : qrCodeValue ? 'Gerar Outro QR Code' : 'Gerar QR Code de Conexão'}
               </Text>
             </TouchableOpacity>
 
@@ -386,11 +380,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 182, 144, 0.2)',
     gap: 10,
-  },
-  qrImage: {
-    width: 170,
-    height: 170,
-    borderRadius: 12,
   },
   codeBadge: {
     backgroundColor: '#264d8c',

@@ -12,7 +12,7 @@ import {
   Settings2,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import QRCodeGenerator from 'qrcode';
+import QRCode from 'react-native-qrcode-svg';
 import { FadeInItem, MotionButton as TouchableOpacity } from '../components/Motion';
 import { COLORS } from '../constants/theme';
 import { getAppointmentProximity, getGreetingByHour } from '../lib/healthUtils';
@@ -37,7 +37,6 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({
   onNavigate,
   dm,
 }) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [inviteCode, setInviteCode] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [generating, setGenerating] = useState<boolean>(false);
@@ -52,15 +51,6 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({
     try {
       const code = await onCreateInvite();
       setInviteCode(code);
-      const url = await QRCodeGenerator.toDataURL(code, {
-        width: 240,
-        margin: 2,
-        color: {
-          dark: '#264d8c',
-          light: '#FFFFFF',
-        },
-      });
-      setQrCodeUrl(url);
     } catch (e) {
       Alert.alert(
         'Erro ao gerar QR Code',
@@ -192,7 +182,7 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({
               <Text style={styles.heroButtonText}>
                 {generating
                   ? 'Gerando...'
-                  : qrCodeUrl
+                  : inviteCode
                     ? 'Gerar novo QR Code'
                     : 'Gerar QR Code p/ Paciente'}
               </Text>
@@ -201,7 +191,7 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({
         </FadeInItem>
 
         {/* QR Code Presentation Card for Patients */}
-        {qrCodeUrl ? (
+        {inviteCode ? (
           <View
             style={[
               styles.qrCard,
@@ -219,7 +209,7 @@ export const ProfessionalDashboardScreen: React.FC<Props> = ({
             </Text>
 
             <View style={styles.qrImageContainer}>
-              <Image source={{ uri: qrCodeUrl }} style={styles.qrImage} />
+              <QRCode value={inviteCode} size={180} color="#264d8c" backgroundColor="#FFFFFF" />
             </View>
 
             <View style={styles.codeRow}>
@@ -449,7 +439,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  qrImage: { width: 180, height: 180 },
   codeRow: {
     flexDirection: 'row',
     alignItems: 'center',

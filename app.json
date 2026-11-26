@@ -2,7 +2,7 @@
   "expo": {
     "name": "theSEDA",
     "slug": "seda",
-    "version": "1.6.3",
+    "version": "1.6.4",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.kiiaro.seda1",
-      "versionCode": 10,
+      "versionCode": 11,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
