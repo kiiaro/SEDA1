@@ -34,7 +34,7 @@ export function friendlyAuthError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? '');
   const normalized = message.toLowerCase();
   if (normalized.includes('over_email_send_rate_limit') || normalized.includes('email rate limit') || normalized.includes('too many requests')) {
-    return 'O limite de envio de e-mails do SEDA foi atingido. Aguarde antes de tentar novamente. Para normalizar os cadastros, o responsável pelo projeto precisa configurar um serviço SMTP no Supabase.';
+    return 'O limite de envio de e-mails do theSEDA foi atingido. Aguarde antes de tentar novamente. Para normalizar os cadastros, o responsável pelo projeto precisa configurar um serviço SMTP no Supabase.';
   }
   if (normalized.includes('email address not authorized')) {
     return 'O envio de e-mail está no modo de teste do Supabase. Configure SMTP próprio ou use um endereço autorizado da equipe do projeto.';

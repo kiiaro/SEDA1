@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "SEDA",
+    "name": "theSEDA",
     "slug": "seda",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "scheme": "seda",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#FFE16D"
+      "backgroundColor": "#04B78D"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,11 +18,11 @@
     },
     "android": {
       "package": "com.kiiaro.seda1",
-      "versionCode": 7,
+      "versionCode": 8,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFE16D"
+        "backgroundColor": "#04B78D"
       }
     },
     "web": {
@@ -34,7 +34,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permita que o SEDA leia o QR de conexão com seu profissional.",
+          "cameraPermission": "Permita que o theSEDA leia o QR de conexão com seu profissional.",
           "recordAudioAndroid": false
         }
       ]

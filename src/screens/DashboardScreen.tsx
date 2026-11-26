@@ -73,7 +73,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ records, onBac
 
   const handleShare = async () => {
     try {
-      await Share.share({ message: `SEDA — resumo de medições\nPressão: ${pressureRecords.length} registros; média sistólica ${average(pressureRecords.map((r) => r.systolic))} mmHg.\nGlicemia: ${glucoseRecords.length} registros; média ${average(glucoseRecords.map((r) => r.glucose))} mg/dL.` });
+      await Share.share({ message: `theSEDA — resumo de medições\nPressão: ${pressureRecords.length} registros; média sistólica ${average(pressureRecords.map((r) => r.systolic))} mmHg.\nGlicemia: ${glucoseRecords.length} registros; média ${average(glucoseRecords.map((r) => r.glucose))} mg/dL.` });
     } catch { Alert.alert('Compartilhamento indisponível', 'Não foi possível abrir a opção de compartilhar.'); }
   };
 

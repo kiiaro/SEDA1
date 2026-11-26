@@ -22,7 +22,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onSave, onBack, dm })
     setDraft((current) => ({ ...current, emergencyContact: { ...current.emergencyContact, [key]: value } }));
 
   const save = async () => {
-    if (!draft.name.trim()) { Alert.alert('Nome obrigatório', 'Informe como você quer aparecer no SEDA.'); return; }
+    if (!draft.name.trim()) { Alert.alert('Nome obrigatório', 'Informe como você quer aparecer no theSEDA.'); return; }
     if (draft.phone && draft.phone.replace(/\D/g, '').length < 10) { Alert.alert('Telefone inválido', 'Informe o DDD e o número completo.'); return; }
     if (draft.emergencyContact.phone && draft.emergencyContact.phone.replace(/\D/g, '').length < 10) { Alert.alert('Contato de emergência inválido', 'Informe o DDD e o número completo.'); return; }
     setSaving(true);

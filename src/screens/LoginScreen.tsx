@@ -70,12 +70,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
     >
       {/* Header Gradient */}
       <LinearGradient
-        colors={[COLORS.secondary, '#FFF0AA']}
+        colors={[COLORS.brand, '#13C5A1']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.header, compact && styles.headerCompact]}
       >
-        <View style={styles.logoRow}><Image source={require('../../assets/seda-logo.png')} resizeMode="contain" style={styles.logoImage} accessibilityLabel="SEDA" /></View>
+        <View style={styles.logoRow}><Image source={require('../../assets/seda-logo.png')} resizeMode="contain" style={styles.logoImage} accessibilityLabel="theSEDA" /></View>
         <Text style={styles.brandSubtitle}>
           Cuidado que aproxima
         </Text>
@@ -104,7 +104,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
         </View>
 
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: dm.text }]}>Acesse o SEDA</Text>
+          <Text style={[styles.title, { color: dm.text }]}>Acesse o theSEDA</Text>
           <Text style={[styles.subtitle, { color: dm.sub }]}>
             Entre com seu e-mail e senha para acessar seus dados
           </Text>
@@ -199,7 +199,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onResetPasswo
           activeOpacity={0.8}
           style={[styles.loginBtn, { backgroundColor: COLORS.primaryDk }]}
         >
-          <Text style={styles.loginBtnText}>{busy ? 'Aguarde...' : 'Entrar no SEDA'}</Text>
+          <Text style={styles.loginBtnText}>{busy ? 'Aguarde...' : 'Entrar no theSEDA'}</Text>
           <ArrowRight size={20} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
 

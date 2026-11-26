@@ -54,7 +54,7 @@ export const ConnectionsScreen: React.FC<Props> = ({ user, userId, connections, 
     if (!code.trim()) { Alert.alert('Digite o código', 'Peça o código de conexão ao profissional.'); return; }
     Alert.alert(
       'Conectar com profissional?',
-      'Ao continuar, você autoriza o vínculo com esta conta e poderá conversar pelo chat do SEDA. Você pode remover a conexão depois.',
+      'Ao continuar, você autoriza o vínculo com esta conta e poderá conversar pelo chat do theSEDA. Você pode remover a conexão depois.',
       [
         { text: 'Agora não', style: 'cancel' },
         { text: 'Conectar', onPress: async () => {

@@ -287,7 +287,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.modalHint, { color: dm.sub }]}>Este contato fica na sua rede de apoio. Para usar o chat do SEDA, a outra pessoa precisa ter uma conta e aceitar um convite de conexão.</Text>
+            <Text style={[styles.modalHint, { color: dm.sub }]}>Este contato fica na sua rede de apoio. Para usar o chat do theSEDA, a outra pessoa precisa ter uma conta e aceitar um convite de conexão.</Text>
 
             <View style={styles.modalBody}>
               <View style={styles.formItem}>
