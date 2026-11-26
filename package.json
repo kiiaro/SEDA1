@@ -1,7 +1,7 @@
 {
   "name": "theseda",
   "private": true,
-  "version": "1.6.4",
+  "version": "1.6.5",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

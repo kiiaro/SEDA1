@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Alert, Keyboard } from 'react-native';
+import { View, StyleSheet, Alert, Keyboard, Platform } from 'react-native';
 import type { User } from '@supabase/supabase-js';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -50,6 +50,11 @@ import { EditProfileScreen } from './screens/EditProfileScreen';
 import { SupportScreen } from './screens/SupportScreen';
 import { FamilyDashboardScreen } from './screens/FamilyDashboardScreen';
 import { acceptPatientInvite, createPatientInvite, loadProfessionalConnections } from './lib/professional';
+
+const getWebRedirectUrl = () => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location?.origin) return undefined;
+  return `${window.location.origin}/`;
+};
 
 export default function App() {
   // Central application state
@@ -128,7 +133,7 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    if (typeof window !== 'undefined') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('autostart') === '1') {
         const rawRole = params.get('role');
@@ -200,7 +205,7 @@ export default function App() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+          redirectTo: getWebRedirectUrl(),
           data: preferredRole ? { userType: preferredRole } : undefined,
         } as any,
       });
@@ -492,7 +497,7 @@ export default function App() {
               onLoginGoogle={handleLoginGoogle}
               notice={authNotice}
               onResetPassword={async (email) => {
-                const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+                const redirectTo = getWebRedirectUrl();
                 const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
               }}
